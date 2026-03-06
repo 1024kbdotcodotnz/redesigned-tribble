@@ -1,0 +1,58 @@
+{
+  "title": "Oranga Tamariki Act 1989",
+  "act_id": "oranga_tamariki_act_1989",
+  "sections": [
+    {
+      "number": "s 2",
+      "title": "Welfare and interests of child or young person",
+      "content": "The welfare and interests of the child or young person shall be the first and paramount consideration in all matters under this Act. This principle guides all decision-making."
+    },
+    {
+      "number": "s 14",
+      "title": "Care or protection proceedings",
+      "content": "Where a child or young person is in need of care or protection, the Court may make various orders including placing the child in the custody of Oranga Tamariki or a suitable person."
+    },
+    {
+      "number": "s 17",
+      "title": "Grounds for care or protection",
+      "content": "A child or young person is in need of care or protection if they have been or are likely to be harmed, ill-treated, abused, neglected, or deprived. This includes witnessing family violence."
+    },
+    {
+      "number": "s 208",
+      "title": "Youth justice principles",
+      "content": "The youth justice system is based on the principles that children and young persons should be kept in the community as much as possible, and that their families should participate in decisions."
+    },
+    {
+      "number": "s 245",
+      "title": "Police powers in relation to young persons",
+      "content": "Police have powers to arrest young persons, but must consider alternatives to arrest and must notify Oranga Tamariki and parents/guardians as soon as practicable."
+    },
+    {
+      "number": "s 258",
+      "title": "Family group conference",
+      "content": "Family group conferences are central to youth justice. They involve the young person, family, victim, and professionals to develop a plan addressing the offending."
+    },
+    {
+      "number": "s 272",
+      "title": "Youth Court jurisdiction",
+      "content": "The Youth Court has jurisdiction over most offences committed by young persons (14-16 years). Some serious offences may be transferred to the District Court or High Court."
+    },
+    {
+      "number": "s 283",
+      "title": "Orders Youth Court may make",
+      "content": "The Youth Court may make various orders including supervision, community work, fines, and in serious cases, transfer to adult court or residential orders."
+    },
+    {
+      "number": "s 311",
+      "title": "Automatic name suppression",
+      "content": "There is automatic name suppression for young persons in Youth Court proceedings. This can be lifted in exceptional circumstances."
+    },
+    {
+      "number": "s 350",
+      "title": "Child, Young Person and Family Service",
+      "content": "Oranga Tamariki (the Ministry for Children) provides services for the care and protection of children and young persons, and youth justice services."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002643",
+  "source": "Comprehensive compilation"
+}

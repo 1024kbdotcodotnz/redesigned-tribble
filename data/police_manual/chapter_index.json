@@ -1,0 +1,217 @@
+{
+  "created": "2026-03-03T10:08:45.760082",
+  "total_chapters": 26,
+  "by_category": {
+    "General Procedures": 26
+  },
+  "chapters": [
+    {
+      "title": "T",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/T",
+      "last_updated": null,
+      "file": "T.json",
+      "has_procedures": false
+    },
+    {
+      "title": "I",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/I",
+      "last_updated": null,
+      "file": "I.json",
+      "has_procedures": false
+    },
+    {
+      "title": "M",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/M",
+      "last_updated": null,
+      "file": "M.json",
+      "has_procedures": false
+    },
+    {
+      "title": "P",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/P",
+      "last_updated": null,
+      "file": "P.json",
+      "has_procedures": false
+    },
+    {
+      "title": "N",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/N",
+      "last_updated": null,
+      "file": "N.json",
+      "has_procedures": false
+    },
+    {
+      "title": "X",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/X",
+      "last_updated": null,
+      "file": "X.json",
+      "has_procedures": false
+    },
+    {
+      "title": "G",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/G",
+      "last_updated": null,
+      "file": "G.json",
+      "has_procedures": false
+    },
+    {
+      "title": "J",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/J",
+      "last_updated": null,
+      "file": "J.json",
+      "has_procedures": false
+    },
+    {
+      "title": "Z",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/Z",
+      "last_updated": null,
+      "file": "Z.json",
+      "has_procedures": false
+    },
+    {
+      "title": "D",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/D",
+      "last_updated": null,
+      "file": "D.json",
+      "has_procedures": false
+    },
+    {
+      "title": "L",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/L",
+      "last_updated": null,
+      "file": "L.json",
+      "has_procedures": false
+    },
+    {
+      "title": "V",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/V",
+      "last_updated": null,
+      "file": "V.json",
+      "has_procedures": false
+    },
+    {
+      "title": "R",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/R",
+      "last_updated": null,
+      "file": "R.json",
+      "has_procedures": false
+    },
+    {
+      "title": "A",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/A",
+      "last_updated": null,
+      "file": "A.json",
+      "has_procedures": false
+    },
+    {
+      "title": "S",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/S",
+      "last_updated": null,
+      "file": "S.json",
+      "has_procedures": false
+    },
+    {
+      "title": "Y",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/Y",
+      "last_updated": null,
+      "file": "Y.json",
+      "has_procedures": false
+    },
+    {
+      "title": "C",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/C",
+      "last_updated": null,
+      "file": "C.json",
+      "has_procedures": false
+    },
+    {
+      "title": "F",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/F",
+      "last_updated": null,
+      "file": "F.json",
+      "has_procedures": false
+    },
+    {
+      "title": "K",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/K",
+      "last_updated": null,
+      "file": "K.json",
+      "has_procedures": false
+    },
+    {
+      "title": "O",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/O",
+      "last_updated": null,
+      "file": "O.json",
+      "has_procedures": false
+    },
+    {
+      "title": "B",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/B",
+      "last_updated": null,
+      "file": "B.json",
+      "has_procedures": false
+    },
+    {
+      "title": "W",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/W",
+      "last_updated": null,
+      "file": "W.json",
+      "has_procedures": false
+    },
+    {
+      "title": "U",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/U",
+      "last_updated": null,
+      "file": "U.json",
+      "has_procedures": false
+    },
+    {
+      "title": "Q",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/Q",
+      "last_updated": null,
+      "file": "Q.json",
+      "has_procedures": false
+    },
+    {
+      "title": "H",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/H",
+      "last_updated": null,
+      "file": "H.json",
+      "has_procedures": false
+    },
+    {
+      "title": "E",
+      "category": "General Procedures",
+      "url": "https://www.police.govt.nz/about-us/publications/corporate/police-manual-chapters/E",
+      "last_updated": null,
+      "file": "E.json",
+      "has_procedures": false
+    }
+  ]
+}

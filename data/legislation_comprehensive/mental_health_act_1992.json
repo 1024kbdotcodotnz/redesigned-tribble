@@ -1,0 +1,28 @@
+{
+  "title": "Mental Health (Compulsory Assessment and Treatment) Act 1992",
+  "act_id": "mental_health_act_1992",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Criteria for compulsory assessment",
+      "content": "A person may be subject to compulsory assessment if they appear to be mentally disordered and that mental disorder poses a serious danger to their health or safety or to the safety of others."
+    },
+    {
+      "number": "s 41",
+      "title": "Police may apprehend",
+      "content": "Any constable who believes that a person is mentally disordered and that it is necessary in the interests of that person or of public safety may apprehend that person and take them to a hospital."
+    },
+    {
+      "number": "s 109",
+      "title": "Fitness to stand trial",
+      "content": "If there is reason to believe a defendant may not be fit to stand trial due to mental impairment, the court must investigate the defendant's fitness before proceeding."
+    },
+    {
+      "number": "s 111",
+      "title": "Special verdict",
+      "content": "If a defendant commits an act constituting an offence but is at the time insane (lacks capacity to understand or control actions), the jury must return a special verdict of not guilty on account of insanity."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003212",
+  "source": "Comprehensive compilation"
+}

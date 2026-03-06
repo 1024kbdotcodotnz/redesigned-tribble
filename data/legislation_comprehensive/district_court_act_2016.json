@@ -1,0 +1,23 @@
+{
+  "title": "District Court Act 2016",
+  "act_id": "district_court_act_2016",
+  "sections": [
+    {
+      "number": "s 8",
+      "title": "Jurisdiction",
+      "content": "The District Court has jurisdiction to hear and determine any criminal proceedings for offences punishable by imprisonment not exceeding 10 years, and certain other matters."
+    },
+    {
+      "number": "s 66",
+      "title": "Sentencing jurisdiction",
+      "content": "The District Court has jurisdiction to impose sentences including imprisonment up to 10 years, fines up to $100,000, community-based sentences, and other orders."
+    },
+    {
+      "number": "s 147",
+      "title": "Right of appeal",
+      "content": "A defendant may appeal to the High Court against conviction or sentence. The appeal must be filed within 20 working days unless an extension is granted."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003142",
+  "source": "Comprehensive compilation"
+}

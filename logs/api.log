@@ -1,0 +1,16 @@
+INFO:     Started server process [30848]
+INFO:     Waiting for application startup.
+/home/owner/nz_legal_rag/core/rag_engine.py:69: LangChainDeprecationWarning: The class `OllamaEmbeddings` was deprecated in LangChain 0.3.1 and will be removed in 1.0.0. An updated version of the class exists in the `langchain-ollama package and should be used instead. To use it run `pip install -U `langchain-ollama` and import as `from `langchain_ollama import OllamaEmbeddings``.
+  self.embeddings = OllamaEmbeddings(model=embedding_model)
+/home/owner/nz_legal_rag/core/rag_engine.py:73: LangChainDeprecationWarning: The class `Ollama` was deprecated in LangChain 0.3.1 and will be removed in 1.0.0. An updated version of the class exists in the `langchain-ollama package and should be used instead. To use it run `pip install -U `langchain-ollama` and import as `from `langchain_ollama import OllamaLLM``.
+  self.llm = Ollama(
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Starting NZ Legal RAG API Server...
+✓ Loaded 6255 documents
+✓ 3 tenants configured
+INFO:     127.0.0.1:57562 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33242 - "POST /api/v1/search HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60786 - "GET /api/v1/tenant/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60790 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56046 - "GET /health HTTP/1.1" 200 OK

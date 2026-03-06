@@ -1,0 +1,23 @@
+{
+  "title": "Harassment Act 1997",
+  "act_id": "harassment_act_1997",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Harassment",
+      "content": "Harassment means a pattern of behaviour directed at a specific person that is intended to cause that person to fear for their safety or the safety of others, or to suffer substantial emotional distress."
+    },
+    {
+      "number": "s 8",
+      "title": "Restraining orders",
+      "content": "A person who is being harassed may apply for a restraining order against the harasser. The order may prohibit the harasser from contacting or approaching the victim."
+    },
+    {
+      "number": "s 18",
+      "title": "Offence to breach restraining order",
+      "content": "Every person commits an offence who, knowing that a restraining order is in force, contravenes or fails to comply with any condition of the order. Maximum penalty: imprisonment up to 6 months or fine up to $5,000."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003512",
+  "source": "Comprehensive compilation"
+}

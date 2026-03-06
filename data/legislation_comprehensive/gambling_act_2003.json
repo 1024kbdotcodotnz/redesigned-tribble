@@ -1,0 +1,23 @@
+{
+  "title": "Gambling Act 2003",
+  "act_id": "gambling_act_2003",
+  "sections": [
+    {
+      "number": "s 19",
+      "title": "Prohibited gambling",
+      "content": "Gambling conducted otherwise than in accordance with this Act is prohibited gambling. This includes unlicensed casinos and unauthorized gambling operations."
+    },
+    {
+      "number": "s 298",
+      "title": "Cheating",
+      "content": "Every person commits an offence who cheats in the course of gambling, whether licensed or prohibited. Cheating includes using fraudulent means to influence the outcome."
+    },
+    {
+      "number": "s 308",
+      "title": "Search warrants",
+      "content": "An inspector or constable may apply for a search warrant if they have reasonable grounds to believe that an offence against this Act is being or has been committed."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003726",
+  "source": "Comprehensive compilation"
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Surveillance",
+  "chapter": "S",
+  "section": "Physical and Electronic Surveillance",
+  "category": "Surveillance and Covert Operations",
+  "content": "\nPOLICE MANUAL - SURVEILLANCE\n\nSearch and Surveillance Act 2012\n\nTypes of Surveillance:\n1. Physical surveillance (visual observation)\n2. Electronic surveillance (devices)\n3. Covert filming/recording\n4. Tracking devices\n5. Visual surveillance devices\n\nVisual Surveillance:\n- Can conduct without warrant in public\n- Private property requires warrant or consent\n- Cannot use visual surveillance device without warrant\n- Cannot surveil lawyer-client communications\n\nTracking Devices:\n- Warrant required to install\n- Must specify vehicle/person\n- Time limits apply\n- Must report to issuing officer\n\nSurveillance Device Warrants (s 48):\n- Video cameras\n- Listening devices\n- Tracking devices\n- Must specify place/person\n- Must specify device type\n- Execution time limits\n\nPrivate Property:\n- Cannot enter private property for surveillance without:\n  * Warrant\n  * Consent\n  * Other lawful authority\n- Trespass notice applies\n\nProhibited Surveillance:\n- Lawyer-client communications\n- Judicial deliberations\n- Parliamentary proceedings\n- Medical consultations (without specific warrant)\n\nRetention:\n- Surveillance material must be retained as evidence\n- Must be disclosed to defense\n- Destruction policies for non-evidentiary material\n- Privacy considerations\n\nRelated Legislation:\n- Search and Surveillance Act 2012, ss 48-60\n- Privacy Act 2020\n- Evidence Act 2006\n",
+  "key_procedures": [
+    "Obtain warrant for device installation",
+    "Specify device and target clearly",
+    "Respect privileged communications",
+    "Maintain secure storage",
+    "Disclose to defense"
+  ],
+  "priority": 2,
+  "created": "2026-03-03T10:16:31.500300",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Interception Warrants (Wiretapping)",
+  "chapter": "W",
+  "section": "Telecommunications and Surveillance Interception",
+  "category": "Surveillance and Covert Operations",
+  "content": "\nPOLICE MANUAL - INTERCEPTION WARRANTS\n\nSearch and Surveillance Act 2012, Part 4\n\nWhat Can Be Intercepted:\n- Telephone calls (landline and mobile)\n- Text messages (SMS)\n- Internet communications\n- Email\n- VoIP calls\n- Any telecommunications\n\nAuthorization Required:\n- Interception warrant from High Court Judge\n- Must be serious offence (4+ years imprisonment)\n- Must be necessary and proportionate\n- Must be no other reasonable means\n- Must specify target and method\n\nApplication Requirements:\n- Affidavit setting out grounds\n- Details of investigation\n- Why interception necessary\n- What evidence sought\n- Time period requested\n- Minimization procedures\n\nTime Limits:\n- Maximum 60 days initial\n- Extensions possible\n- Must report to Judge\n- Continuous necessity review\n\nPrivileged Communications:\n- Lawyer-client communications protected\n- Journalist sources protected (limited)\n- Parliamentary proceedings protected\n- Medical consultations protected\n- Must be minimized (not recorded/monitored)\n\nMinimization:\n- Must minimize collection of irrelevant communications\n- Must stop monitoring privileged communications\n- Regular review of necessity\n- Destruction of irrelevant material\n\nExecution:\n- Telecommunications provider assistance\n- Technical implementation\n- Monitoring facility\n- Real-time or recorded\n- Secure storage\n\nDisclosure:\n- Intercepted material must be disclosed to defense\n- May apply for non-disclosure (rare)\n- Summaries may be provided\n- Full transcripts available\n\nChallenging Evidence:\n- Authorization validity\n- Necessity\n- Privilege breaches\n- Minimization failures\n- Proportionality\n\nPrivacy Considerations:\n- Significant privacy intrusion\n- High threshold\n- Judicial oversight\n- Accountability\n- Reporting requirements\n\nRelated Legislation:\n- Search and Surveillance Act 2012, Part 4\n- Telecommunications Act 2001\n- Privacy Act 2020\n",
+  "key_procedures": [
+    "High Court application required",
+    "Establish serious offence and necessity",
+    "Specify minimization procedures",
+    "Secure storage of intercepts",
+    "Disclose to defense",
+    "Regular necessity reviews"
+  ],
+  "created": "2026-03-03T10:45:46.192185",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

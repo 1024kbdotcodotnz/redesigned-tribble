@@ -1,0 +1,58 @@
+{
+  "title": "Victims' Rights Act 2002",
+  "act_id": "victims_rights_act_2002",
+  "sections": [
+    {
+      "number": "s 8",
+      "title": "Rights to be treated with courtesy and compassion",
+      "content": "Victims have the right to be treated with courtesy and compassion, and respect for their dignity and privacy, by all persons exercising official functions in the administration of justice."
+    },
+    {
+      "number": "s 9",
+      "title": "Right to be informed of services",
+      "content": "Victims have the right to be informed, at the earliest practical opportunity, of the services available to them, including victim support services."
+    },
+    {
+      "number": "s 10",
+      "title": "Right to be informed of progress of investigation",
+      "content": "Victims have the right to be informed of the progress of the investigation of the offence, including whether a suspect has been arrested or charged."
+    },
+    {
+      "number": "s 11",
+      "title": "Right to be informed of prosecution and bail decisions",
+      "content": "Victims have the right to be informed of decisions regarding the prosecution of the offender, including decisions to modify or withdraw charges, and bail decisions affecting the offender."
+    },
+    {
+      "number": "s 12",
+      "title": "Right to give views on matters affecting victim",
+      "content": "Victims have the right to give their views, where practicable, on matters concerning the offence that affect them, including decisions regarding bail, pleas, and sentencing."
+    },
+    {
+      "number": "s 13",
+      "title": "Right to information about offender's release",
+      "content": "Victims have the right to be informed of the offender's release from custody, including on bail, temporary release, parole, or final release."
+    },
+    {
+      "number": "s 14",
+      "title": "Right to protection from offender",
+      "content": "Victims have the right to have their safety and security, and that of their family, considered in bail and sentencing decisions, and to have reasonable protection from the offender."
+    },
+    {
+      "number": "s 15",
+      "title": "Right to information in timely manner",
+      "content": "Victims have the right to be informed of their rights under this Act, and to receive information in a timely manner appropriate to the circumstances."
+    },
+    {
+      "number": "s 27",
+      "title": "Victim impact statement",
+      "content": "Victims have the right to make a victim impact statement to the court, describing the effects of the offence on them. The court must consider this statement in sentencing."
+    },
+    {
+      "number": "s 31",
+      "title": "Register of victims",
+      "content": "Victims may register to receive information about the offender's status, including release dates and conditions."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002547",
+  "source": "Comprehensive compilation"
+}

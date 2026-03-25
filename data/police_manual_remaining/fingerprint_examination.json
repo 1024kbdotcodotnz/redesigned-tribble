@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Fingerprint Examination",
+  "chapter": "F",
+  "section": "Fingerprint Identification and Analysis",
+  "category": "Forensic Identification",
+  "content": "\nPOLICE MANUAL - FINGERPRINT EXAMINATION\n\nFingerprint Principles:\n- Unique to individual\n- Permanent throughout life\n- Can be left on surfaces (latent prints)\n- Can be visible or require enhancement\n\nFingerprint Types:\n- Latent (invisible, requires development)\n- Patent (visible, blood/ink/grease)\n- Impressed (plastic impressions in soft surfaces)\n\nCollection:\n- Photography\n- Lifting with tape\n- Casting (for 3D impressions)\n- Surface-appropriate techniques\n\nIdentification Process:\n1. Analysis (quality assessment)\n2. Comparison (ridge characteristics)\n3. Evaluation (match/non-match/inconclusive)\n4. Verification (second examiner)\n\nAFIS (Automated Fingerprint Identification System):\n- Database search\n- Candidate list generated\n- Manual comparison of candidates\n- Confirmation required\n\nQuality Factors:\n- Surface type\n- Environmental conditions\n- Age of print\n- Development technique\n- Comparison quality\n\nChallenging Evidence:\n- Subjectivity of analysis\n- Cognitive bias\n- Quality of latent print\n- Statistical basis\n- Verification procedures\n- Error rates\n\nRelated Legislation:\n- Evidence Act 2006\n- Criminal Procedure Act 2011\n",
+  "key_procedures": [
+    "Photograph before lifting",
+    "Use appropriate development technique",
+    "Enter into AFIS",
+    "Manual comparison",
+    "Verification by second examiner",
+    "Comprehensive documentation"
+  ],
+  "created": "2026-03-03T10:45:46.193257",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

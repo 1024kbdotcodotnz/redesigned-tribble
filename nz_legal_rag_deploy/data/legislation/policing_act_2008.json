@@ -1,0 +1,23 @@
+{
+  "title": "Policing Act 2008",
+  "act_id": "policing_act_2008",
+  "sections": [
+    {
+      "number": "s 8",
+      "title": "Functions of Police",
+      "content": "The functions of Police include: keeping the peace, maintaining public safety, law enforcement, crime prevention, and emergency management."
+    },
+    {
+      "number": "s 9",
+      "title": "Principles of policing",
+      "content": "Police must act professionally, ethically, and with respect for human rights. Police must be accountable and maintain public confidence."
+    },
+    {
+      "number": "s 40",
+      "title": "Constables' powers",
+      "content": "A constable has all the powers, protections, duties, and responsibilities of a constable at common law and under any enactment."
+    }
+  ],
+  "parsed_date": "2026-03-03T10:06:15.417854",
+  "source": "Manual compilation"
+}

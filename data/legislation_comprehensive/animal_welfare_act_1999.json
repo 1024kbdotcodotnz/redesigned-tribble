@@ -1,0 +1,23 @@
+{
+  "title": "Animal Welfare Act 1999",
+  "act_id": "animal_welfare_act_1999",
+  "sections": [
+    {
+      "number": "s 28",
+      "title": "Ill-treatment of animals",
+      "content": "Every person commits an offence who wilfully ill-treats any animal. Ill-treatment includes torturing, abusing, or terrifying an animal, or causing unnecessary pain or distress."
+    },
+    {
+      "number": "s 29",
+      "title": "Reckless or negligent ill-treatment",
+      "content": "Every person commits an offence who recklessly or negligently ill-treats any animal. This includes a failure to take reasonable steps to alleviate pain or distress."
+    },
+    {
+      "number": "s 127",
+      "title": "Powers of inspectors and constables",
+      "content": "An inspector or constable may enter any place where an animal is kept and inspect the animal and its conditions. A warrant is required for private dwellings."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003657",
+  "source": "Comprehensive compilation"
+}

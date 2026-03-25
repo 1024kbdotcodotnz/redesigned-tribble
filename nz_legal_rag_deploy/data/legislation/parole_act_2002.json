@@ -1,0 +1,23 @@
+{
+  "title": "Parole Act 2002",
+  "act_id": "parole_act_2002",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Purpose",
+      "content": "The purpose of this Act is to make provision for the release of long-term and short-term prisoners on parole or compassionate release."
+    },
+    {
+      "number": "s 18",
+      "title": "Parole eligibility date",
+      "content": "A long-term prisoner's parole eligibility date is one-third of the way through the sentence or 12 years, whichever is less."
+    },
+    {
+      "number": "s 21",
+      "title": "Test for release on parole",
+      "content": "The Parole Board must not order release on parole unless satisfied that the prisoner does not pose an undue risk to the safety of the community."
+    }
+  ],
+  "parsed_date": "2026-03-03T10:06:15.417689",
+  "source": "Manual compilation"
+}

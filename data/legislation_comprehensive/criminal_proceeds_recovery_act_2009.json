@@ -1,0 +1,58 @@
+{
+  "title": "Criminal Proceeds (Recovery) Act 2009",
+  "act_id": "criminal_proceeds_recovery_act_2009",
+  "sections": [
+    {
+      "number": "s 6",
+      "title": "Significant criminal activity",
+      "content": "Significant criminal activity means criminal activity that is carried out by 2 or more persons acting jointly, or that involves substantial planning and organisation, or in relation to which an offence is punishable by 4 or more years imprisonment."
+    },
+    {
+      "number": "s 7",
+      "title": "Meaning of tainted property",
+      "content": "Tainted property means property that is wholly or partly derived or realised, directly or indirectly, by any person from significant criminal activity. This includes proceeds of crime."
+    },
+    {
+      "number": "s 18",
+      "title": "Application for restraining order",
+      "content": "The Commissioner of Police may apply to the High Court for a restraining order in respect of any tainted property. The application may be made ex parte (without notice to affected persons)."
+    },
+    {
+      "number": "s 22",
+      "title": "Effect of restraining order",
+      "content": "A restraining order prohibits any dealing with the property specified in the order. The order may be subject to conditions. The order operates for a specified period, initially up to 28 days, extendable."
+    },
+    {
+      "number": "s 48",
+      "title": "Profit forfeiture order",
+      "content": "The High Court may make a profit forfeiture order against a person if satisfied, on the balance of probabilities, that the person has engaged in significant criminal activity and has profited from that activity."
+    },
+    {
+      "number": "s 65",
+      "title": "Instrument forfeiture order",
+      "content": "The High Court may make an instrument forfeiture order if satisfied, on the balance of probabilities, that the property is an instrument of crime (used in or in connection with significant criminal activity)."
+    },
+    {
+      "number": "s 80",
+      "title": "Cash forfeiture",
+      "content": "Cash of $10,000 or more is forfeited to the Crown if it is seized and the Commissioner satisfies the Court that there are reasonable grounds to suspect the cash is tainted property or an instrument of crime."
+    },
+    {
+      "number": "s 141",
+      "title": "Commissioner's notice",
+      "content": "The Commissioner of Police must give written notice to the person affected before applying for a profit forfeiture order. The person may make submissions in response."
+    },
+    {
+      "number": "s 142",
+      "title": "Settlements",
+      "content": "The Commissioner and the affected person may agree to settle proceedings under this Act. The Court must approve any settlement."
+    },
+    {
+      "number": "s 146",
+      "title": "Appeals",
+      "content": "Any party may appeal to the Court of Appeal against any determination of the High Court under this Act."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002443",
+  "source": "Comprehensive compilation"
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Electronic Evidence",
+  "chapter": "E",
+  "section": "Digital Forensics and Device Seizure",
+  "category": "Evidence Collection",
+  "content": "\nPOLICE MANUAL - ELECTRONIC EVIDENCE\n\nSearch and Surveillance Act 2012\nEvidence Act 2006\n\nTypes of Electronic Evidence:\n- Mobile phones/smartphones\n- Computers/laptops\n- Tablets\n- External storage (USB, HDD)\n- CCTV/DVR systems\n- Social media\n- Cloud storage\n- Email\n- GPS data\n- Internet records\n\nSeizure:\n- Warrant usually required for search\n- Can seize devices under general warrant\n- Must be lawful authority\n- Document what seized\n- Chain of custody critical\n\nPhone Examinations:\n- Faraday bags to prevent remote wiping\n- PIN/password requirements\n- Specialist Digital Forensic Unit\n- Extraction tools (Cellebrite, XRY)\n- Logical vs physical extraction\n- Cloud data preservation\n\nComputer Examinations:\n- Write blockers used\n- Forensic imaging\n- Keyword searches\n- Deleted file recovery\n- Internet history\n- Email analysis\n- Encrypted drives\n\nSocial Media:\n- Preservation requests to platforms\n- Search warrants to providers\n- Privacy settings don't prevent lawful access\n- Metadata important\n- Screenshots may be evidence\n\nCloud Storage:\n- International jurisdictional issues\n- Preservation orders\n- Mutual legal assistance treaties (MLAT)\n- Provider policies vary\n- Real-time access rare\n\nProduction Orders:\n- Can compel production of documents\n- Includes electronic documents\n- Third parties (banks, telcos)\n- Must be specific\n\nSurveillance Device Warrants:\n- For installing listening devices\n- Tracking devices on vehicles\n- Video surveillance\n- Strict time limits\n\nLegal Challenges:\n- Encryption and passwords\n- Legal privilege (lawyer communications)\n- Privacy considerations\n- Journalistic privilege\n- Medical privilege\n\nRelated Legislation:\n- Search and Surveillance Act 2012\n- Evidence Act 2006\n- Privacy Act 2020\n- Telecommunications Act 2001\n",
+  "key_procedures": [
+    "Use Faraday bags for phones",
+    "Use write blockers for computers",
+    "Maintain chain of custody",
+    "Document all extraction steps",
+    "Preserve cloud data promptly"
+  ],
+  "priority": 2,
+  "created": "2026-03-03T10:16:31.500693",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

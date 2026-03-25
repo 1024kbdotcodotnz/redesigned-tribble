@@ -1,0 +1,14 @@
+{
+  "d020b0f7-69b7-4772-bfe1-fbd5704f81b5": [],
+  "87fcc0c1-a89e-4dc7-81e9-25666e883796": [],
+  "f0bbef1d-2a97-46b2-b864-2ec10fa668a2": [
+    {
+      "tenant_id": "f0bbef1d-2a97-46b2-b864-2ec10fa668a2",
+      "date": "2026-03-03",
+      "queries_made": 4,
+      "documents_stored": 0,
+      "storage_bytes_used": 0,
+      "api_calls": 0
+    }
+  ]
+}

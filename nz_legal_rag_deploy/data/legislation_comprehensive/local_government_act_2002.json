@@ -1,0 +1,28 @@
+{
+  "title": "Local Government Act 2002",
+  "act_id": "local_government_act_2002",
+  "sections": [
+    {
+      "number": "s 22",
+      "title": "Power to make bylaws",
+      "content": "A local authority may make bylaws for the good rule and government of its district and for the general purposes set out in this Act. Bylaws must not be inconsistent with general law."
+    },
+    {
+      "number": "s 332",
+      "title": "Alcohol ban bylaws",
+      "content": "A local authority may make bylaws banning the consumption or possession of alcohol in public places (liquor bans). Police have powers to enforce these bans, including seizing alcohol."
+    },
+    {
+      "number": "s 333",
+      "title": "Enforcement of alcohol bans",
+      "content": "A constable may seize and dispose of alcohol in a public place where an alcohol ban is in force. A person commits an offence if they possess or consume alcohol in a ban area."
+    },
+    {
+      "number": "s 357",
+      "title": "Offence to breach bylaw",
+      "content": "Every person commits an offence against this Act who acts in contravention of or fails to comply with any bylaw of a local authority."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002976",
+  "source": "Comprehensive compilation"
+}

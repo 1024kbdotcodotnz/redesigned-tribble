@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # ChromaDB - Vector database for legal documents
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: nzlegal-chromadb
+    volumes:
+      - ./chroma_db:/chroma/chroma
+      - ./data:/data:ro
+    ports:
+      - "8000:8000"
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    restart: unless-stopped
+    networks:
+      - nzlegal-network
+
+  # Ollama - Local LLM inference
+  ollama:
+    image: ollama/ollama:latest
+    container_name: nzlegal-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    networks:
+      - nzlegal-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Uncomment below for CPU-only deployment
+    # environment:
+    #   - OLLAMA_CPU_ONLY=1
+
+  # NZ Legal RAG API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: nzlegal-api
+    ports:
+      - "8080:8000"
+    environment:
+      - CHROMA_URL=http://chromadb:8000
+      - OLLAMA_URL=http://ollama:11434
+      - CHROMA_DB_PATH=/app/chroma_db
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-change-me-in-production}
+    volumes:
+      - ./data:/app/data:ro
+      - ./chroma_db:/app/chroma_db
+      - ./tenant_data:/app/tenant_data
+      - ./secure_data:/app/secure_data
+      - ./logs:/app/logs
+    depends_on:
+      - chromadb
+      - ollama
+    restart: unless-stopped
+    networks:
+      - nzlegal-network
+
+  # Streamlit Web Interface
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: nzlegal-web
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - nzlegal-network
+
+  # Redis - For caching and rate limiting (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: nzlegal-redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - nzlegal-network
+    profiles:
+      - production
+
+volumes:
+  ollama_data:
+  redis_data:
+
+networks:
+  nzlegal-network:
+    driver: bridge

@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Stolen Vehicles",
+  "chapter": "S",
+  "section": "Vehicle Theft and Recovery",
+  "category": "Road Policing",
+  "content": "\nPOLICE MANUAL - STOLEN VEHICLES\n\nReporting:\n- Stolen vehicle reports taken seriously\n- Check if actually stolen (owner confirmation)\n- Check if repossessed\n- Enter in Police database immediately\n- Contact registered owner\n\nANPR (Automatic Number Plate Recognition):\n- Cameras read number plates\n- Check against stolen vehicle database\n- Real-time alerts\n- Can track vehicle movements\n- Data retention policies apply\n\nStopping Stolen Vehicles:\n- Reasonable grounds required to stop\n- ANPR hit provides grounds\n- Must consider safety\n- Risk assessment for fleeing driver\n- Pursuit policy applies\n\nSearching Recovered Vehicles:\n- Search for evidence of theft\n- Search for offender property\n- Fingerprint opportunities\n- DNA opportunities\n- Dashcam/CCTV footage\n\nForensic Examination:\n- Fingerprints\n- DNA\n- Tool marks\n- Damage analysis\n- Ignition examination\n- GPS data extraction\n\nRecovery:\n- Owner notification\n- Release procedures\n- Damage documentation\n- Property return\n- Insurance information\n\nChop Shops:\n- Organised theft for parts\n- Surveillance required\n- Search warrants usually required\n- Coordinated operations\n- Large-scale investigations\n\nPrevention:\n- Immobilizers\n- Alarms\n- Tracking devices\n- Secure parking advice\n- Public education\n\nRelated Legislation:\n- Land Transport Act 1998\n- Crimes Act 1961 (theft, receiving)\n- Search and Surveillance Act 2012\n",
+  "key_procedures": [
+    "Verify vehicle actually stolen",
+    "Enter in database immediately",
+    "Use ANPR for detection",
+    "Forensic examination if recovered",
+    "Coordinate with owner",
+    "Gather evidence for prosecution"
+  ],
+  "created": "2026-03-03T10:45:46.191802",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

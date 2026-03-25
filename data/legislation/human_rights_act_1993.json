@@ -1,0 +1,18 @@
+{
+  "title": "Human Rights Act 1993",
+  "act_id": "human_rights_act_1993",
+  "sections": [
+    {
+      "number": "s 21",
+      "title": "Prohibited grounds of discrimination",
+      "content": "Discrimination is prohibited on grounds including: sex, race, disability, age, sexual orientation, religious belief."
+    },
+    {
+      "number": "s 29",
+      "title": "Unlawful discrimination in public life",
+      "content": "It is unlawful to discriminate in the provision of access to public places, facilities, and services."
+    }
+  ],
+  "parsed_date": "2026-03-03T10:06:15.418001",
+  "source": "Manual compilation"
+}

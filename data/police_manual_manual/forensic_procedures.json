@@ -1,0 +1,16 @@
+{
+  "title": "Police Manual - Forensic Procedures",
+  "chapter": "Forensic",
+  "section": "Forensic Procedures",
+  "category": "Evidence Collection",
+  "content": "\nPOLICE MANUAL - FORENSIC PROCEDURES\n\nSearch and Surveillance Act 2012 - Part 5\n\nTypes of Forensic Procedures:\n1. Intimate forensic procedures (require consent or court order):\n   - Blood samples\n   - Intimate searches\n   - Buccal (mouth) swabs\n   - DNA sampling\n\n2. Non-intimate forensic procedures (may be authorized by senior officer):\n   - Fingerprinting\n   - Photography\n   - External physical examination\n   - Hair samples (non-intimate)\n\nConsent Requirements:\n- Must be informed consent\n- Person must understand what is involved\n- Consent can be withdrawn at any time\n- Written record of consent required\n\nHigh-Risk Forensic Procedures (Court Order Required):\n- Intimate forensic procedures without consent\n- Procedures on children/young persons without consent\n- Procedures on person incapable of giving consent\n\nApplying for Court Order:\n- Must apply to District Court\n- Must show reasonable grounds\n- Must demonstrate necessity\n- Proportionality test applies\n\nDNA Sampling:\n- Must be authorized\n- Sample can be retained on database\n- Consent for retention vs one-time comparison\n- Destruction requirements for elimination samples\n\nFingerprints:\n- Can be taken if person charged or suspected\n- Can be taken if person convicted\n- Must be destroyed if proceedings discontinued\n\nTime Limits:\n- Must be conducted within reasonable time\n- Cannot delay unnecessarily\n- Results must be provided to defense if exculpatory\n\nDocumentation:\n- Detailed record of procedure\n- Chain of custody\n- Any refusal or resistance\n- Medical attention if required\n\nRelated Legislation:\n- Search and Surveillance Act 2012, ss 75-88\n- Criminal Investigations (Bodily Samples) Act 1995\n- Privacy Act 2020\n",
+  "key_procedures": [
+    "Obtain informed consent where possible",
+    "Apply to court for intimate procedures without consent",
+    "Maintain chain of custody",
+    "Provide results to defense if exculpatory",
+    "Destroy samples as required by law"
+  ],
+  "created": "2026-03-03T10:10:28.522274",
+  "source": "Police Manual (NZ Police)"
+}

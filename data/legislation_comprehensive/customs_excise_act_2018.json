@@ -1,0 +1,28 @@
+{
+  "title": "Customs and Excise Act 2018",
+  "act_id": "customs_excise_act_2018",
+  "sections": [
+    {
+      "number": "s 9",
+      "title": "Prohibited imports",
+      "content": "Certain goods are prohibited from importation including objectionable publications, certain weapons, and drugs. Importing prohibited goods is an offence."
+    },
+    {
+      "number": "s 96",
+      "title": "Power to search",
+      "content": "A Customs officer may search any person, baggage, or vehicle entering or leaving New Zealand if they have reasonable grounds to suspect any goods are being imported or exported contrary to this Act."
+    },
+    {
+      "number": "s 167",
+      "title": "Seizure of goods",
+      "content": "Customs officers may seize any goods that are subject to customs control that they have reasonable grounds to believe are unlawfully imported or exported."
+    },
+    {
+      "number": "s 373",
+      "title": "Importing prohibited goods",
+      "content": "Every person commits an offence who imports prohibited goods. For prohibited drugs, penalties can include imprisonment up to life depending on quantity and type."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003436",
+  "source": "Comprehensive compilation"
+}

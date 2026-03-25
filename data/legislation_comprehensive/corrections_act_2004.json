@@ -1,0 +1,38 @@
+{
+  "title": "Corrections Act 2004",
+  "act_id": "corrections_act_2004",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Purpose",
+      "content": "The purpose of this Act is to provide for the safe, secure, humane, and effective management of prisoners and to provide opportunities for rehabilitation and reintegration."
+    },
+    {
+      "number": "s 67",
+      "title": "Conduct of prisoners",
+      "content": "Every prisoner must conduct themselves with reasonable compliance with the lawful instructions of prison staff and with reasonable regard to the rights of other prisoners."
+    },
+    {
+      "number": "s 68",
+      "title": "Prisoner rights",
+      "content": "Prisoners have rights including: to be treated with humanity and respect; to be free from torture or cruel treatment; to have adequate food, water, and medical care; to communicate with family; and to make complaints."
+    },
+    {
+      "number": "s 69",
+      "title": "Management of prisoners",
+      "content": "Prisoners may be managed in accordance with prison rules and instructions, which may include segregation for good order and security."
+    },
+    {
+      "number": "s 71",
+      "title": "Searches",
+      "content": "Prisoners and prison property may be searched in accordance with prison procedures. Strip searches must be conducted with proper authorization and respect for dignity."
+    },
+    {
+      "number": "s 81",
+      "title": "Release conditions",
+      "content": "Prisoners released on parole or at sentence end may be subject to release conditions imposed by the Parole Board or the court."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003053",
+  "source": "Comprehensive compilation"
+}

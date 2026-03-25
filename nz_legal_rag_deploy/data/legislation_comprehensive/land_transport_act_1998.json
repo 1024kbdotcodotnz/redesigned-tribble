@@ -1,0 +1,58 @@
+{
+  "title": "Land Transport Act 1998",
+  "act_id": "land_transport_act_1998",
+  "sections": [
+    {
+      "number": "s 56",
+      "title": "Driving while disqualified or suspended",
+      "content": "Every person commits an offence who drives a motor vehicle on a road while disqualified from driving or while their licence is suspended. Maximum penalty varies based on circumstances."
+    },
+    {
+      "number": "s 57",
+      "title": "Driving contrary to limited licence",
+      "content": "Every person commits an offence who drives in contravention of the conditions of a limited licence (work licence)."
+    },
+    {
+      "number": "s 58",
+      "title": "Driving while forbidden",
+      "content": "Every person commits an offence who drives while forbidden to drive by a Police officer. This includes being stopped by Police and instructed not to drive."
+    },
+    {
+      "number": "s 59",
+      "title": "Driving in contravention of alcohol interlock licence",
+      "content": "Every person commits an offence who drives in contravention of the conditions of an alcohol interlock licence, including driving a vehicle without an approved interlock device."
+    },
+    {
+      "number": "s 63",
+      "title": "Reckless or dangerous driving",
+      "content": "Every person commits an offence who operates a vehicle recklessly or dangerously. Dangerous driving involves driving that creates a significant risk to public safety."
+    },
+    {
+      "number": "s 64",
+      "title": "Careless or inconsiderate driving",
+      "content": "Every person commits an offence who operates a vehicle carelessly or without reasonable consideration for other persons using the road."
+    },
+    {
+      "number": "s 65",
+      "title": "Duty to stop after accident",
+      "content": "The driver of a vehicle involved in an accident must stop and ascertain whether any person has been injured, and must give their name and address and vehicle details."
+    },
+    {
+      "number": "s 89",
+      "title": "Power of Police to require persons to supply information",
+      "content": "Any constable may require any driver of a vehicle to state their full name, full address, date of birth, and occupation, and to produce their driver licence for inspection."
+    },
+    {
+      "number": "s 95",
+      "title": "Compulsory blood test",
+      "content": "Police may require a blood test if a constable has good cause to suspect a person has committed an offence against section 65 (duty to stop after accident) involving injury or death."
+    },
+    {
+      "number": "s 96",
+      "title": "Person incapable of consenting to blood test",
+      "content": "Where a person is unconscious or otherwise incapable of consenting, a medical practitioner or medical officer may take a blood sample if the constable has good cause to suspect an offence."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002743",
+  "source": "Comprehensive compilation"
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Police Manual - Disclosure",
+  "chapter": "Disclosure",
+  "section": "Criminal Case Disclosure",
+  "category": "Disclosure and Prosecution",
+  "content": "\nPOLICE MANUAL - DISCLOSURE IN CRIMINAL CASES\n\nCriminal Procedure Act 2011 Requirements:\n\nInitial Disclosure (Section 34):\nMust be made as soon as practicable after filing charging document:\n- Copy of charging document\n- Summary of facts\n- Criminal record (if any)\n- Any expert evidence to be relied on\n\nFull Disclosure (Section 36):\nMust be made no later than:\n- Committal (if proceeding by committal)\n- Case review (if proceeding directly to trial)\n\nMaterial That Must Be Disclosed:\n- Statements of all witnesses Police intend to call\n- Any statement of defendant\n- Any exhibit or document to be relied on\n- Expert reports\n- Any video/audio recording\n- Photos, maps, diagrams\n- Records of interview\n- Any statement that is inconsistent with another statement\n- Any material that may assist the defense (Brady material)\n\nBrady Material (Material That May Assist Defense):\n- Information undermining prosecution case\n- Information supporting defense case\n- Information affecting witness credibility\n- Exculpatory evidence\n- Any information that might reasonably be expected to assist defense\n\nTiming of Disclosure:\n- As soon as reasonably practicable\n- Must not delay to gain tactical advantage\n- Continuing duty to disclose as material becomes available\n- Pre-charge disclosure may be appropriate in serious cases\n\nWithholding Information:\n- Can withhold on grounds of public interest immunity\n- Must apply to court for non-disclosure order\n- Privilege (legal professional privilege, informer privilege)\n- Must balance against defendant's right to fair trial\n\nElectronic Disclosure:\n- Preferred method where possible\n- Must be secure and accessible\n- Metadata may need to be disclosed\n\nConsequences of Non-Disclosure:\n- Stay of proceedings\n- Exclusion of evidence\n- Costs against Police\n- Reputational damage\n- Disciplinary action\n\nRelated Legislation:\n- Criminal Procedure Act 2011, ss 34-46\n- Evidence Act 2006\n- R v Ward [1993] (disclosure obligations)\n",
+  "key_procedures": [
+    "Provide initial disclosure within statutory timeframe",
+    "Provide full disclosure before case review",
+    "Disclose any inconsistent statements",
+    "Disclose Brady material immediately",
+    "Maintain audit trail of disclosure"
+  ],
+  "created": "2026-03-03T10:10:28.522123",
+  "source": "Police Manual (NZ Police)"
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Evidence Collection",
+  "chapter": "E",
+  "section": "Evidence Collection and Preservation",
+  "category": "Evidence Collection",
+  "content": "\nPOLICE MANUAL - EVIDENCE COLLECTION AND PRESERVATION\n\nEvidence Act 2006\n\nChain of Custody:\n- Essential for all exhibits\n- Must record every person who handles\n- Must record date/time/reason\n- Must maintain integrity\n- Must be able to account for exhibit at all times\n\nExhibit Categories:\n1. Physical (weapons, clothing, drugs)\n2. Documentary (statements, records)\n3. Digital (computers, phones, CCTV)\n4. Biological (blood, DNA, fingerprints)\n5. Photographic (scenes, injuries)\n\nScene Examination:\n- Systematic approach\n- Photograph before disturbing\n- Grid search method\n- Environmental evidence\n- Contamination prevention\n- DNA elimination samples from officers\n\nPackaging:\n- Appropriate containers\n- Labelling requirements\n- Sealing protocols\n- Biological evidence (breathable packaging)\n- Sharp objects (safety)\n- Liquids (leak-proof)\n\nLabelling:\n- Unique exhibit number\n- Brief description\n- Date/time collected\n- Location found\n- Collector's details\n- Signature\n\nTransport:\n- Secure transport\n- Maintaining chain of custody\n- Biological evidence (temperature considerations)\n- Urgent items flagged\n- Documentation of transport\n\nStorage:\n- Secure exhibit room\n- Access control\n- Climate control for biologicals\n- Electronic tracking\n- Regular audits\n- Destruction procedures for unclaimed items\n\nDigital Evidence:\n- Faraday bags for phones\n- Write-blocking for computers\n- Cloud preservation\n- Social media preservation\n- CCTV seizure\n- Data extraction logs\n\nRelated Legislation:\n- Evidence Act 2006\n- Search and Surveillance Act 2012\n- Privacy Act 2020\n",
+  "key_procedures": [
+    "Photograph evidence in situ",
+    "Collect using appropriate methods",
+    "Package securely with proper labelling",
+    "Complete chain of custody documentation",
+    "Store in secure exhibit room"
+  ],
+  "priority": 2,
+  "created": "2026-03-03T10:16:31.499508",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

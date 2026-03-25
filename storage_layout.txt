@@ -1,0 +1,134 @@
+NZ Legal Advisor - RunPod Storage Layout
+========================================
+
+DEPLOYMENT CONFIGURATION (Recommended)
+--------------------------------------
+┌─────────────────────────────────────────────────────────────┐
+│                    RUNPOD INSTANCE                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  CONTAINER DISK (20GB) - Temporary                          │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  / (root filesystem)                                │   │
+│  │  ├── /usr/bin/python3                              │   │
+│  │  ├── /usr/local/cuda                              │   │
+│  │  └── /tmp                                          │   │
+│  │       ⚠️  LOST when pod stops!                      │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  VOLUME DISK (50GB) - PERSISTENT ⭐                         │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  /workspace  ← MOUNTED HERE                         │   │
+│  │                                                     │   │
+│  │  /workspace/nz_legal_rag/                          │   │
+│  │  ├── chroma_db/          ← DATABASE (124MB)        │   │
+│  │  │   ├── chroma.sqlite3   ✅ CRITICAL - Keep!      │   │
+│  │  │   └── index files                              │   │
+│  │  ├── tenant_data/        ← API KEYS               │   │
+│  │  │   └── tenants.json     ✅ CRITICAL - Keep!      │   │
+│  │  ├── venv/               ← Python env             │   │
+│  │  └── logs/               ← Application logs        │   │
+│  │                                                     │   │
+│  │  /workspace/ollama_models/                        │   │
+│  │  ├── manifests/                                   │   │
+│  │  └── blobs/              ← MODELS (30GB)          │   │
+│  │       ├── mixtral:latest (~26GB)  ✅ PERSISTED     │   │
+│  │       └── nomic-embed-text (~0.3GB)               │   │
+│  │                                                     │   │
+│  │  ✅ ALL DATA SURVIVES POD STOP/START              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+
+WHAT HAPPENS WHEN...
+--------------------
+
+1. YOU STOP THE POD (to save money)
+   ┌────────────────────────────────┐
+   │ Container Disk: ❌ WIPED       │
+   │ Volume Disk:    ✅ KEPT        │
+   └────────────────────────────────┘
+   
+   Result: Start pod → Database & models still there
+   Startup time: 2 minutes (just restart services)
+
+2. YOU START THE POD (next morning)
+   ┌────────────────────────────────┐
+   │ Container Disk: Fresh Ubuntu   │
+   │ Volume Disk:    Your data      │
+   └────────────────────────────────┘
+   
+   Action: Run /workspace/start_legal_advisor.sh
+   Result: Back in business!
+
+3. YOU DELETE THE POD (⚠️ DANGER)
+   ┌────────────────────────────────┐
+   │ Container Disk: ❌ GONE        │
+   │ Volume Disk:    ❌ GONE TOO!   │
+   └────────────────────────────────┘
+   
+   ⚠️  MUST backup first!
+   ./backup_runpod.sh <ip>
+
+
+STORAGE SIZE CALCULATOR
+-----------------------
+Minimum Config (20GB Volume):
+  Database:          0.2 GB
+  Tenant data:       0.001 GB
+  Ollama models:     0 GB (re-download each time!)
+  ─────────────────────────
+  Total:            ~0.2 GB
+  Cost:             $2/month
+  Startup:          15 min (download models)
+
+Recommended Config (50GB Volume):
+  Database:          0.2 GB
+  Tenant data:       0.001 GB
+  Ollama models:    30 GB (Mixtral + embeddings)
+  Growth space:     20 GB
+  ─────────────────────────
+  Total:           ~50 GB
+  Cost:             $5/month
+  Startup:          2 min (models persisted!)
+
+Professional Config (100GB Volume):
+  Database:          0.5 GB
+  Tenant data:       0.01 GB
+  Ollama models:    60 GB (multiple LLMs)
+  Backups:          20 GB
+  Growth:           20 GB
+  ─────────────────────────
+  Total:           ~100 GB
+  Cost:            $10/month
+  Startup:          2 min
+
+
+COST COMPARISON
+---------------
+| Config           | Storage | GPU    | Total/mo | Startup  |
+|------------------|---------|--------|----------|----------|
+| Minimal          | $2      | $35    | $37      | 15 min   |
+| Recommended ⭐   | $5      | $35    | $40      | 2 min    |
+| Professional     | $10     | $35    | $45      | 2 min    |
+
+
+VERIFICATION COMMANDS
+---------------------
+ssh root@<pod-ip>
+
+# Check volume exists
+df -h | grep runpod-volume
+
+# Check workspace is on volume
+mount | grep workspace
+
+# Check database location
+ls -la /workspace/nz_legal_rag/chroma_db/
+
+# Check models on volume
+ls -la /workspace/ollama_models/
+
+# Check available space
+du -sh /workspace/*

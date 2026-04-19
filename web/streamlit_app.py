@@ -313,6 +313,22 @@ def show_sidebar():
         
         st.markdown("---")
         
+        # MCP Status
+        st.subheader("🔗 MCP Server")
+        try:
+            mcp_resp = requests.get("http://localhost:8080/mcp", timeout=2)
+            mcp_ok = mcp_resp.status_code in (200, 406)
+        except Exception:
+            mcp_ok = False
+        
+        if mcp_ok:
+            st.success("MCP Online (port 8080)")
+            st.caption("Connect: `./3_connect.sh` then use `http://localhost:8080/mcp`")
+        else:
+            st.warning("MCP Offline")
+        
+        st.markdown("---")
+        
         # Navigation
         st.subheader("🌐 Navigation")
         pages = ["🏠 Home", "🔍 Search", "📊 Analysis", "📋 Similar Cases", "✅ Element Check", "📁 Upload", "📈 Usage"]

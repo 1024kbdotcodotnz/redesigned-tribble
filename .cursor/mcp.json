@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "nz-legal-rag": {
+      "command": "python3",
+      "args": [
+        "/home/megabyte/nz_legal_rag/mcp_stdio_proxy.py",
+        "http://localhost:8080/mcp"
+      ]
+    }
+  }
+}

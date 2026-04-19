@@ -1,5 +1,55 @@
+# Virtual environments
 venv/
 .venv/
+env/
+ENV/
+
+# Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Logs
+logs/
+*.log
+
+# Local environment / secrets
+.env
+.env.local
+
+# Database (large files)
 chroma_db/
+*.sqlite3
+
+# Data directories (large/generated)
+data/legislation/
+data/case_law/
+data/police_manual/
+
+# Tenant data (sensitive)
+tenant_data/
+secure_data/
+
+# Streamlit local config
+.streamlit/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+backups/
+*.tar.gz
+*.zip
+
+# Deploy artifacts (managed separately)
+contents.zip

@@ -1,23 +1,6 @@
 version: '3.8'
 
 services:
-  # ChromaDB - Vector database for legal documents
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: nzlegal-chromadb
-    volumes:
-      - ./chroma_db:/chroma/chroma
-      - ./data:/data:ro
-    ports:
-      - "8000:8000"
-    environment:
-      - IS_PERSISTENT=TRUE
-      - PERSIST_DIRECTORY=/chroma/chroma
-      - ANONYMIZED_TELEMETRY=FALSE
-    restart: unless-stopped
-    networks:
-      - nzlegal-network
-
   # Ollama - Local LLM inference
   ollama:
     image: ollama/ollama:latest
@@ -49,12 +32,14 @@ services:
     ports:
       - "8080:8000"
     environment:
-      - CHROMA_URL=http://chromadb:8000
       - OLLAMA_URL=http://ollama:11434
       - CHROMA_DB_PATH=/app/chroma_db
+      - TENANT_DATA_PATH=/app/tenant_data
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - ADMIN_API_KEY=${ADMIN_API_KEY:-change-me-in-production}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-r1:14b}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
     volumes:
       - ./data:/app/data:ro
       - ./chroma_db:/app/chroma_db
@@ -62,7 +47,6 @@ services:
       - ./secure_data:/app/secure_data
       - ./logs:/app/logs
     depends_on:
-      - chromadb
       - ollama
     restart: unless-stopped
     networks:
@@ -80,6 +64,32 @@ services:
       - API_URL=http://api:8000
     depends_on:
       - api
+    restart: unless-stopped
+    networks:
+      - nzlegal-network
+
+  # MCP Server - Model Context Protocol
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: nzlegal-mcp
+    ports:
+      - "8080:8080"
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - CHROMA_DB_PATH=/app/chroma_db
+      - MCP_TRANSPORT=streamable-http
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
+      - MCP_PATH=/mcp
+      - LLM_MODEL=${LLM_MODEL:-deepseek-r1:14b}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./tenant_data:/app/tenant_data
+    depends_on:
+      - ollama
     restart: unless-stopped
     networks:
       - nzlegal-network

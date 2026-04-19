@@ -1,19 +1,22 @@
 #!/bin/bash
 # NZ Legal RAG Startup Script
 
-cd "$(dirname "$0")"
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$APP_DIR"
 
-# Load environment
+# Load environment safely
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
-# Check if running in virtual environment
-if [ -z "$VIRTUAL_ENV" ]; then
-    if [ -d "venv" ]; then
-        echo "Activating virtual environment..."
-        source venv/bin/activate
-    fi
+# Use explicit .venv paths
+PYTHON_BIN="$APP_DIR/.venv/bin/python"
+STREAMLIT_BIN="$APP_DIR/.venv/bin/streamlit"
+if [ ! -f "$PYTHON_BIN" ]; then
+    echo "❌ .venv not found. Please create a virtual environment first."
+    exit 1
 fi
 
 # Check Ollama
@@ -25,7 +28,7 @@ fi
 
 echo "✓ Ollama is running"
 echo "✓ Models available:"
-ollama list | grep -E "(mixtral|nomic-embed-text|mistral|llama3.1)"
+ollama list | grep -E "(mixtral|nomic-embed-text|mistral|llama3.1|deepseek-r1)"
 
 echo ""
 echo "Starting NZ Legal RAG..."
@@ -36,7 +39,7 @@ mkdir -p data logs chroma_db tenant_data secure_data
 # Start API server
 echo ""
 echo "🚀 Starting API server on port ${API_PORT:-8000}..."
-python -m api.server &
+$PYTHON_BIN -m api.server &
 API_PID=$!
 
 # Wait for API to be ready
@@ -49,10 +52,24 @@ for i in {1..30}; do
     sleep 1
 done
 
+# Start MCP server (optional – set MCP_ENABLED=1 to enable)
+MCP_PID=""
+if [ "${MCP_ENABLED:-0}" = "1" ]; then
+    echo ""
+    echo "🔌 Starting MCP server on port ${MCP_PORT:-8080}..."
+    $PYTHON_BIN -m api.mcp_server \
+        --transport "${MCP_TRANSPORT:-streamable-http}" \
+        --host "${MCP_HOST:-0.0.0.0}" \
+        --port "${MCP_PORT:-8080}" \
+        --path "${MCP_PATH:-/mcp}" &
+    MCP_PID=$!
+    echo "✓ MCP server started"
+fi
+
 # Start web interface
 echo ""
 echo "🌐 Starting web interface on port 8501..."
-streamlit run web/streamlit_app.py --server.port 8501 &
+$STREAMLIT_BIN run web/streamlit_app.py --server.port 8501 &
 WEB_PID=$!
 
 echo ""
@@ -63,11 +80,14 @@ echo ""
 echo "  🌐 Web Interface:  http://localhost:8501"
 echo "  🔌 API:            http://localhost:${API_PORT:-8000}"
 echo "  📚 API Docs:       http://localhost:${API_PORT:-8000}/docs"
+if [ -n "$MCP_PID" ]; then
+    echo "  🔗 MCP:            http://localhost:${MCP_PORT:-8080}${MCP_PATH:-/mcp}"
+fi
 echo ""
 echo "  Press Ctrl+C to stop"
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 
 # Wait for interrupt
-trap "echo ''; echo 'Shutting down...'; kill $API_PID $WEB_PID 2>/dev/null; exit" INT
+trap "echo ''; echo 'Shutting down...'; kill $API_PID $WEB_PID $MCP_PID 2>/dev/null; exit" INT
 wait

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-NZ Legal RAG API Server
-FastAPI-based REST API for legal research
+NZ Legal RAG API Server (Online Demo Version)
+FastAPI-based REST API for legal research with role-based access.
 """
 
 import os
@@ -13,14 +13,14 @@ from contextlib import asynccontextmanager
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException, Depends, Request, status
+from fastapi import FastAPI, HTTPException, Depends, Request, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from core.rag_engine import NZLegalRAG, LegalAnalysis
-from security.tenant_manager import TenantManager, AccessTier, TenantConfig
+from security.tenant_manager import TenantManager, UserRole, TenantConfig
 
 # Global instances
 rag_engine: Optional[NZLegalRAG] = None
@@ -82,10 +82,25 @@ class ElementCheckRequest(BaseModel):
     statute: Optional[str] = None
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    tenant_id: str
+    username: str
+    name: str
+    role: str
+    api_key: str
+    quotas: Dict[str, Any]
+
+
 class TenantInfo(BaseModel):
     tenant_id: str
+    username: str
     name: str
-    tier: str
+    role: str
     quotas: Dict[str, Any]
 
 
@@ -94,6 +109,16 @@ class UsageReport(BaseModel):
     period_days: int
     summary: Dict[str, Any]
     daily_breakdown: List[Dict[str, Any]]
+
+
+class IngestRequest(BaseModel):
+    documents: List[Dict[str, str]] = Field(..., description="List of {name, content} documents")
+
+
+class IngestResponse(BaseModel):
+    success: bool
+    message: str
+    chunks_ingested: int
 
 
 # Lifespan context manager for startup/shutdown
@@ -131,14 +156,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="NZ Legal RAG API",
     description="New Zealand Legal Research API with RAG capabilities",
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan
 )
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -186,22 +211,31 @@ def check_quota(tenant: TenantConfig, operation: str):
         )
 
 
-def require_tier(min_tier: AccessTier):
-    """Require minimum tier for endpoint"""
+def require_role(*roles: UserRole):
+    """Require specific role(s) for endpoint"""
     def checker(tenant: TenantConfig = Depends(get_current_tenant)):
-        tier_levels = {
-            AccessTier.COMMUNITY: 1,
-            AccessTier.PROFESSIONAL: 2,
-            AccessTier.ENTERPRISE: 3
-        }
-        
-        if tier_levels[tenant.tier] < tier_levels[min_tier]:
+        if tenant.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"This endpoint requires {min_tier.value} tier or higher"
+                detail=f"This endpoint requires one of the following roles: {[r.value for r in roles]}"
             )
         return tenant
     return checker
+
+
+def _get_search_collections(session_id: Optional[str], requested: Optional[List[str]]) -> List[str]:
+    """Build the final list of collections to search, excluding other users' temp collections."""
+    if requested:
+        base = [c for c in requested if not c.startswith("temp_session_")]
+    else:
+        base = [c for c in rag_engine.collections.keys() if not c.startswith("temp_session_")]
+    
+    if session_id:
+        temp_coll = f"temp_session_{session_id}"
+        if temp_coll in rag_engine.collections and temp_coll not in base:
+            base.append(temp_coll)
+    
+    return base
 
 
 # Endpoints
@@ -210,9 +244,35 @@ def root():
     """Root endpoint"""
     return {
         "name": "NZ Legal RAG API",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "status": "operational",
         "docs": "/docs"
+    }
+
+
+@app.post("/api/v1/login", response_model=LoginResponse)
+def login(request: LoginRequest):
+    """Authenticate with username and password"""
+    result = tenant_manager.verify_credentials(request.username, request.password)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password"
+        )
+    
+    tenant, api_key = result
+    return {
+        "tenant_id": tenant.tenant_id,
+        "username": tenant.username,
+        "name": tenant.name,
+        "role": tenant.role.value,
+        "api_key": api_key,
+        "quotas": {
+            "max_queries_per_day": tenant.max_queries_per_day,
+            "max_storage_bytes": tenant.max_storage_bytes,
+            "max_documents": tenant.max_documents,
+            "queries_per_minute": tenant.queries_per_minute
+        }
     }
 
 
@@ -246,24 +306,21 @@ def list_collections():
 @app.post("/api/v1/search", response_model=SearchResponse)
 def search(
     request: SearchRequest,
+    session_id: Optional[str] = Header(None, alias="X-Session-ID"),
     tenant: TenantConfig = Depends(get_current_tenant)
 ):
     """Search the legal database"""
     check_quota(tenant, "query")
     
-    # Apply tenant filter
-    if tenant.tier == AccessTier.COMMUNITY:
-        # Community tier can only access public collections
-        pass
+    collections = _get_search_collections(session_id, request.collections)
     
     results = rag_engine.search(
         query=request.query,
-        collections=request.collections,
+        collections=collections,
         filters=request.filters,
         top_k=request.top_k
     )
     
-    # Record usage
     tenant_manager.record_usage(tenant.tenant_id, query_count=1)
     
     return {
@@ -277,29 +334,30 @@ def search(
             for r in results
         ],
         "total": len(results),
-        "collections_searched": request.collections or list(rag_engine.collections.keys())
+        "collections_searched": collections
     }
 
 
 @app.post("/api/v1/analyze", response_model=AnalysisResponse)
 def analyze(
     request: AnalysisRequest,
+    session_id: Optional[str] = Header(None, alias="X-Session-ID"),
     tenant: TenantConfig = Depends(get_current_tenant)
 ):
     """Perform AI-powered legal analysis"""
     check_quota(tenant, "query")
     
-    # Combine query with context if provided
     full_query = request.query
     if request.context:
         full_query = f"{request.query}\n\nContext: {request.context}"
     
+    collections = _get_search_collections(session_id, None)
     analysis = rag_engine.legal_analysis(
         query=full_query,
-        analysis_type=request.analysis_type
+        analysis_type=request.analysis_type,
+        collections=collections
     )
     
-    # Record usage
     tenant_manager.record_usage(tenant.tenant_id, query_count=1)
     
     return {
@@ -334,7 +392,6 @@ def find_similar_cases(
         top_k=request.top_k
     )
     
-    # Record usage
     tenant_manager.record_usage(tenant.tenant_id, query_count=1)
     
     return {
@@ -357,18 +414,20 @@ def find_similar_cases(
 @app.post("/api/v1/check-elements")
 def check_elements(
     request: ElementCheckRequest,
+    session_id: Optional[str] = Header(None, alias="X-Session-ID"),
     tenant: TenantConfig = Depends(get_current_tenant)
 ):
     """Check if legal elements are satisfied by facts"""
     check_quota(tenant, "query")
     
+    collections = _get_search_collections(session_id, None)
     result = rag_engine.check_elements(
         offense=request.offense,
         facts=request.facts,
-        statute=request.statute
+        statute=request.statute,
+        collections=collections
     )
     
-    # Record usage
     tenant_manager.record_usage(tenant.tenant_id, query_count=1)
     
     return result
@@ -379,8 +438,9 @@ def get_my_tenant(tenant: TenantConfig = Depends(get_current_tenant)):
     """Get current tenant information"""
     return {
         "tenant_id": tenant.tenant_id,
+        "username": tenant.username,
         "name": tenant.name,
-        "tier": tenant.tier.value,
+        "role": tenant.role.value,
         "quotas": {
             "max_queries_per_day": tenant.max_queries_per_day,
             "max_storage_bytes": tenant.max_storage_bytes,
@@ -409,11 +469,115 @@ def get_usage(
     }
 
 
-# Admin endpoints (would need additional admin auth)
+# Ingest endpoints
+@app.post("/api/v1/ingest/permanent", response_model=IngestResponse)
+def ingest_permanent(
+    request: IngestRequest,
+    tenant: TenantConfig = Depends(require_role(UserRole.ADMIN, UserRole.STAFF))
+):
+    """Upload documents to permanent storage (Admin & Staff only)"""
+    check_quota(tenant, "store_permanent")
+    
+    if len(request.documents) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 documents per upload")
+    
+    msg = rag_engine.ingest_text(
+        documents=request.documents,
+        collection="user_uploads",
+        metadata={"uploaded_by": tenant.username, "role": tenant.role.value}
+    )
+    
+    # Extract chunk count from message for response
+    chunks = 0
+    try:
+        parts = msg.split()
+        chunks = int(parts[1])
+    except Exception:
+        pass
+    
+    tenant_manager.record_usage(
+        tenant.tenant_id,
+        storage_bytes=sum(len(d.get("content", "")) for d in request.documents),
+        api_calls=1
+    )
+    
+    return {
+        "success": True,
+        "message": msg,
+        "chunks_ingested": chunks
+    }
+
+
+@app.post("/api/v1/ingest/temporary", response_model=IngestResponse)
+def ingest_temporary(
+    request: IngestRequest,
+    session_id: str = Header(..., alias="X-Session-ID"),
+    tenant: TenantConfig = Depends(get_current_tenant)
+):
+    """Upload documents to temporary session storage (all roles)"""
+    if not session_id:
+        raise HTTPException(status_code=400, detail="X-Session-ID header required")
+    
+    if len(request.documents) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 temporary documents per upload")
+    
+    collection_name = f"temp_session_{session_id}"
+    msg = rag_engine.ingest_text(
+        documents=request.documents,
+        collection=collection_name,
+        metadata={"uploaded_by": tenant.username, "session_id": session_id, "temporary": True}
+    )
+    
+    chunks = 0
+    try:
+        parts = msg.split()
+        chunks = int(parts[1])
+    except Exception:
+        pass
+    
+    return {
+        "success": True,
+        "message": msg,
+        "chunks_ingested": chunks
+    }
+
+
+@app.post("/api/v1/ingest/clear-session")
+def clear_session(
+    session_id: str = Header(..., alias="X-Session-ID"),
+    tenant: TenantConfig = Depends(get_current_tenant)
+):
+    """Clear temporary documents for the current session"""
+    if not session_id:
+        raise HTTPException(status_code=400, detail="X-Session-ID header required")
+    
+    collection_name = f"temp_session_{session_id}"
+    deleted = False
+    
+    try:
+        rag_engine.client.delete_collection(name=collection_name)
+        deleted = True
+    except Exception:
+        pass
+    
+    if collection_name in rag_engine.collections:
+        del rag_engine.collections[collection_name]
+    
+    return {
+        "success": True,
+        "deleted": deleted,
+        "session_id": session_id,
+        "message": "Session temporary storage cleared" if deleted else "No temporary storage to clear"
+    }
+
+
+# Admin endpoints
 @app.get("/api/v1/admin/tenants")
-def list_tenants(admin_key: str):
+def list_tenants(
+    admin_key: str,
+    tenant: TenantConfig = Depends(require_role(UserRole.ADMIN))
+):
     """List all tenants (admin only)"""
-    # Simple admin check - in production use proper auth
     expected = os.getenv("ADMIN_API_KEY")
     if not expected or admin_key != expected:
         raise HTTPException(status_code=403, detail="Admin access required")

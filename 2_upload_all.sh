@@ -11,7 +11,7 @@ set -e
 
 RUNPOD_HOST="$1"
 RUNPOD_IP=""
-RUNPOD_PORT="40033"  # Changed from 22 to your custom port
+RUNPOD_PORT="22"  # Default SSH port
 SSH_KEY="$HOME/.ssh/id_ed25519"
 
 # Colors for output
@@ -115,9 +115,10 @@ echo ""
 
 cd "$HOME/nz_legal_rag"
 
-rsync -avz --progress \
+rsync -avz --progress -L \
     -e "ssh -p $RUNPOD_PORT -i $SSH_KEY -o StrictHostKeyChecking=no" \
     --exclude='venv' \
+    --exclude='.venv' \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
     --exclude='*.log' \
@@ -125,6 +126,8 @@ rsync -avz --progress \
     --exclude='.git' \
     --exclude='*.tar.gz' \
     --exclude='id_ed25519*' \
+    --exclude='*.swp' \
+    --exclude='.env' \
     ./ \
     "$RUNPOD_USER@$RUNPOD_IP:/workspace/nz_legal_rag/"
 
@@ -138,8 +141,8 @@ echo "This includes: chroma_db/, tenant_data/"
 echo ""
 
 if [ -d "chroma_db" ] && [ "$(ls -A chroma_db 2>/dev/null)" ]; then
-    echo "Uploading chroma_db (~124MB)..."
-    rsync -avz --progress \
+    echo "Uploading chroma_db (~451MB)..."
+    rsync -avz --progress -L \
         -e "ssh -p $RUNPOD_PORT -i $SSH_KEY -o StrictHostKeyChecking=no" \
         ./chroma_db/ \
         "$RUNPOD_USER@$RUNPOD_IP:/workspace/nz_legal_rag/chroma_db/"

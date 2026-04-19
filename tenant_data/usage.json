@@ -10,5 +10,35 @@
       "storage_bytes_used": 0,
       "api_calls": 0
     }
+  ],
+  "bd45ac36-c606-4646-8dc9-ba53e49482c6": [
+    {
+      "tenant_id": "bd45ac36-c606-4646-8dc9-ba53e49482c6",
+      "date": "2026-04-04",
+      "queries_made": 4,
+      "documents_stored": 0,
+      "storage_bytes_used": 0,
+      "api_calls": 0
+    }
+  ],
+  "0035fc29-d34a-4bb6-911e-81c84854802f": [
+    {
+      "tenant_id": "0035fc29-d34a-4bb6-911e-81c84854802f",
+      "date": "2026-04-04",
+      "queries_made": 0,
+      "documents_stored": 0,
+      "storage_bytes_used": 76,
+      "api_calls": 1
+    }
+  ],
+  "5b2cf03a-b027-4dbb-9c77-22aaae1ba13b": [
+    {
+      "tenant_id": "5b2cf03a-b027-4dbb-9c77-22aaae1ba13b",
+      "date": "2026-04-04",
+      "queries_made": 9,
+      "documents_stored": 0,
+      "storage_bytes_used": 0,
+      "api_calls": 0
+    }
   ]
 }

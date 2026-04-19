@@ -7,6 +7,7 @@ Core retrieval and generation engine for legal research
 import os
 import json
 import re
+import uuid
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any
 from dataclasses import dataclass
@@ -47,11 +48,10 @@ class NZLegalRAG:
     """
     
     COLLECTIONS = {
-        "legal_master": "Legal Master Database (Existing)",
-        "legislation": "NZ Legislation (Acts, Regulations)",
-        "case_law": "NZ Case Law (NZLII)",
-        "police_manual": "Police Manual Chapters",
-        "legal_research": "Legal Research Notes",
+        "nz_legal_unified": "NZ Legal Unified Database",
+        "nz_legislation": "NZ Legislation (Acts, Regulations)",
+        "nzlii_criminal_cases": "NZLII Criminal Cases",
+        "user_uploads": "User Uploaded Documents",
         "confidential": "Confidential Documents (Local)"
     }
     
@@ -185,7 +185,8 @@ class NZLegalRAG:
     def legal_analysis(self, 
                        query: str,
                        context_results: Optional[List[SearchResult]] = None,
-                       analysis_type: str = "general") -> LegalAnalysis:
+                       analysis_type: str = "general",
+                       collections: Optional[List[str]] = None) -> LegalAnalysis:
         """
         Perform AI-powered legal analysis
         
@@ -196,7 +197,7 @@ class NZLegalRAG:
         """
         # Search if no context provided
         if context_results is None:
-            context_results = self.search(query, top_k=10)
+            context_results = self.search(query, collections=collections, top_k=10)
         
         # Build context
         context_text = self._build_analysis_context(context_results, analysis_type)
@@ -378,7 +379,7 @@ Use the Shaheed balancing test framework where applicable.
         
         results = self.search(
             query=query,
-            collections=["case_law"],
+            collections=["nzlii_criminal_cases"],
             top_k=top_k
         )
         
@@ -387,7 +388,8 @@ Use the Shaheed balancing test framework where applicable.
     def check_elements(self, 
                        offense: str,
                        facts: str,
-                       statute: Optional[str] = None) -> Dict:
+                       statute: Optional[str] = None,
+                       collections: Optional[List[str]] = None) -> Dict:
         """
         Check if legal elements are satisfied by given facts
         """
@@ -396,7 +398,7 @@ Use the Shaheed balancing test framework where applicable.
         if statute:
             search_query += f" {statute}"
         
-        results = self.search(search_query, top_k=10)
+        results = self.search(search_query, collections=collections, top_k=10)
         
         # Build analysis prompt
         context = self._build_analysis_context(results, "charge_review")
@@ -506,6 +508,67 @@ Format your response as JSON-like structure with clear headings.
         )
         
         return f"Ingested {len(chunks)} chunks from {file_path}"
+    
+    def ingest_text(self,
+                      documents: List[Dict[str, str]],
+                      collection: str = "user_uploads",
+                      metadata: Optional[Dict] = None) -> str:
+        """
+        Ingest raw text documents into the database
+        
+        Args:
+            documents: List of {"name": str, "content": str}
+            collection: Target collection name
+            metadata: Additional metadata to attach to every chunk
+        """
+        if collection not in self.collections:
+            self.collections[collection] = self.client.create_collection(
+                name=collection,
+                metadata={"description": f"Collection for {collection}"}
+            )
+        
+        total_chunks = 0
+        for doc in documents:
+            name = doc.get("name", "unknown")
+            content = doc.get("content", "")
+            if not content.strip():
+                continue
+            
+            chunks = self.text_splitter.split_text(content)
+            if not chunks:
+                continue
+            
+            ids = []
+            embeddings = []
+            docs = []
+            metadatas = []
+            
+            for i, chunk in enumerate(chunks):
+                chunk_id = f"{name.replace(' ', '_')}_chunk_{i}_{uuid.uuid4().hex[:8]}"
+                chunk_embedding = self.embeddings.embed_documents([chunk])[0]
+                
+                chunk_metadata = {
+                    "source": name,
+                    "chunk_index": i,
+                    "total_chunks": len(chunks),
+                    "category": collection,
+                    **(metadata or {})
+                }
+                
+                ids.append(chunk_id)
+                embeddings.append(chunk_embedding)
+                docs.append(chunk)
+                metadatas.append(chunk_metadata)
+            
+            self.collections[collection].add(
+                ids=ids,
+                embeddings=embeddings,
+                documents=docs,
+                metadatas=metadatas
+            )
+            total_chunks += len(chunks)
+        
+        return f"Ingested {total_chunks} chunks into {collection}"
     
     def get_database_stats(self) -> Dict:
         """Get statistics about the database"""

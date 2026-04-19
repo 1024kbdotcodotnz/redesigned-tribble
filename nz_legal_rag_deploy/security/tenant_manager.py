@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
 """
-Multi-Tenant Manager
-Handles access control and isolation for commercial/community use
+Multi-Tenant Manager (Demo Role-Based Version)
+Handles access control and isolation for the online demo app.
 """
 
 import hashlib
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
 import json
 from pathlib import Path
 
-class AccessTier(Enum):
-    COMMUNITY = "community"
-    PROFESSIONAL = "professional"
-    ENTERPRISE = "enterprise"
+class UserRole(Enum):
+    ADMIN = "admin"
+    STAFF = "staff"
+    USER = "user"
 
 @dataclass
 class TenantConfig:
     tenant_id: str
+    username: str
     name: str
-    tier: AccessTier
+    role: UserRole
     created_at: str
     expires_at: Optional[str]
     api_key_hash: str
+    password_hash: str
+    # Demo-only: stored plaintext so login can return it after restart
+    api_key: Optional[str] = None
     
     # Permissions
     can_access_public_db: bool = True
-    can_store_confidential: bool = False
-    can_use_api: bool = False
+    can_store_permanent: bool = False
+    can_use_api: bool = True
     can_invite_users: bool = False
     
     # Quotas
@@ -55,51 +59,72 @@ class UsageStats:
 
 class TenantManager:
     """
-    Manages multi-tenant access control
+    Manages demo user access control
     
-    Tiers:
-    - COMMUNITY: Read-only access to public legal DB
-    - PROFESSIONAL: Full access + confidential document storage
-    - ENTERPRISE: Multi-user + API access + audit logging
+    Roles:
+    - ADMIN: Full access, unlimited queries, can manage users
+    - STAFF: Full access including permanent storage
+    - USER: Read-only + temporary session uploads only
     """
     
-    TIER_DEFAULTS = {
-        AccessTier.COMMUNITY: {
+    ROLE_DEFAULTS = {
+        UserRole.USER: {
             "can_access_public_db": True,
-            "can_store_confidential": False,
-            "can_use_api": False,
+            "can_store_permanent": False,
+            "can_use_api": True,
             "can_invite_users": False,
             "max_storage_bytes": 0,
-            "max_queries_per_day": 100,
+            "max_queries_per_day": 50,
             "max_users": 1,
             "max_documents": 0,
             "queries_per_minute": 30,
             "concurrent_users": 1
         },
-        AccessTier.PROFESSIONAL: {
+        UserRole.STAFF: {
             "can_access_public_db": True,
-            "can_store_confidential": True,
-            "can_use_api": False,
+            "can_store_permanent": True,
+            "can_use_api": True,
             "can_invite_users": False,
             "max_storage_bytes": 10_000_000_000,  # 10GB
-            "max_queries_per_day": 1000,
+            "max_queries_per_day": 500,
             "max_users": 1,
-            "max_documents": 1000,
+            "max_documents": 5000,
             "queries_per_minute": 120,
             "concurrent_users": 3
         },
-        AccessTier.ENTERPRISE: {
+        UserRole.ADMIN: {
             "can_access_public_db": True,
-            "can_store_confidential": True,
+            "can_store_permanent": True,
             "can_use_api": True,
             "can_invite_users": True,
             "max_storage_bytes": 100_000_000_000,  # 100GB
-            "max_queries_per_day": 10000,
+            "max_queries_per_day": 100_000,
             "max_users": 50,
-            "max_documents": 10000,
+            "max_documents": 100_000,
             "queries_per_minute": 600,
             "concurrent_users": 50
         }
+    }
+    
+    DEMO_ACCOUNTS = {
+        "admin": {
+            "name": "Demo Admin",
+            "role": UserRole.ADMIN,
+            "password": "demo-admin-2024!",
+            "api_key": "nzl_demo_admin_7a8f9e2b4c1d"
+        },
+        "staff": {
+            "name": "Demo Staff",
+            "role": UserRole.STAFF,
+            "password": "demo-staff-2024!",
+            "api_key": "nzl_demo_staff_3e5a7b9d0f2e"
+        },
+        "user": {
+            "name": "Demo User",
+            "role": UserRole.USER,
+            "password": "demo-user-2024!",
+            "api_key": "nzl_demo_user_1c4e6a8b0d3f"
+        },
     }
     
     def __init__(self, storage_dir: str = "./tenant_data"):
@@ -113,6 +138,7 @@ class TenantManager:
         self.usage_stats: Dict[str, List[UsageStats]] = {}
         
         self._load_data()
+        self._auto_seed_demo_users()
     
     def _load_data(self):
         """Load tenants and usage from disk"""
@@ -121,7 +147,18 @@ class TenantManager:
                 with open(self.tenants_file, 'r') as f:
                     data = json.load(f)
                 for tid, tdata in data.items():
-                    tdata['tier'] = AccessTier(tdata['tier'])
+                    # Handle migration from old tier field if present
+                    if 'role' not in tdata and 'tier' in tdata:
+                        tier = tdata.pop('tier')
+                        role_map = {
+                            'community': UserRole.USER,
+                            'professional': UserRole.STAFF,
+                            'enterprise': UserRole.ADMIN
+                        }
+                        tdata['role'] = role_map.get(tier, UserRole.USER).value
+                    if 'api_key' not in tdata:
+                        tdata['api_key'] = None
+                    tdata['role'] = UserRole(tdata['role'])
                     self.tenants[tid] = TenantConfig(**tdata)
             except Exception as e:
                 print(f"Error loading tenants: {e}")
@@ -140,7 +177,7 @@ class TenantManager:
     def _save_data(self):
         """Save tenants and usage to disk"""
         tenants_data = {
-            tid: {**asdict(t), 'tier': t.tier.value}
+            tid: {**asdict(t), 'role': t.role.value}
             for tid, t in self.tenants.items()
         }
         with open(self.tenants_file, 'w') as f:
@@ -153,29 +190,53 @@ class TenantManager:
         with open(self.usage_file, 'w') as f:
             json.dump(usage_data, f, indent=2)
     
-    def create_tenant(self, 
-                      name: str,
-                      tier: AccessTier,
-                      days_valid: int = 365) -> Tuple[str, str]:
+    def _auto_seed_demo_users(self):
+        """Create the three demo accounts if no users exist yet."""
+        if self.tenants:
+            return
+        
+        for username, info in self.DEMO_ACCOUNTS.items():
+            self.create_user(
+                username=username,
+                name=info["name"],
+                role=info["role"],
+                password=info["password"],
+                api_key=info["api_key"],
+                days_valid=365
+            )
+        print("✓ Seeded demo users: admin, staff, user")
+    
+    def create_user(self, 
+                    username: str,
+                    name: str,
+                    role: UserRole,
+                    password: str,
+                    api_key: Optional[str] = None,
+                    days_valid: int = 365) -> Tuple[str, str]:
         """
-        Create a new tenant
+        Create a new demo user.
         
         Returns:
             (tenant_id, api_key)
         """
         tenant_id = str(uuid.uuid4())
-        api_key = self._generate_api_key()
-        api_key_hash = self._hash_api_key(api_key)
+        if api_key is None:
+            api_key = self._generate_api_key()
+        api_key_hash = self._hash(api_key)
+        password_hash = self._hash(password)
         
-        defaults = self.TIER_DEFAULTS[tier]
+        defaults = self.ROLE_DEFAULTS[role]
         
         config = TenantConfig(
             tenant_id=tenant_id,
+            username=username,
             name=name,
-            tier=tier,
+            role=role,
             created_at=datetime.now().isoformat(),
             expires_at=(datetime.now() + timedelta(days=days_valid)).isoformat(),
             api_key_hash=api_key_hash,
+            password_hash=password_hash,
+            api_key=api_key,
             **defaults
         )
         
@@ -189,17 +250,16 @@ class TenantManager:
         """Generate a new API key"""
         return f"nzl_{uuid.uuid4().hex}_{uuid.uuid4().hex[:16]}"
     
-    def _hash_api_key(self, api_key: str) -> str:
-        """Hash an API key for storage"""
-        return hashlib.sha256(api_key.encode()).hexdigest()
+    def _hash(self, value: str) -> str:
+        """Hash a string for storage"""
+        return hashlib.sha256(value.encode()).hexdigest()
     
     def verify_api_key(self, api_key: str) -> Optional[TenantConfig]:
         """Verify an API key and return tenant config"""
-        api_key_hash = self._hash_api_key(api_key)
+        api_key_hash = self._hash(api_key)
         
         for tenant in self.tenants.values():
             if tenant.api_key_hash == api_key_hash:
-                # Check expiration
                 if tenant.expires_at:
                     expires = datetime.fromisoformat(tenant.expires_at)
                     if datetime.now() > expires:
@@ -208,9 +268,30 @@ class TenantManager:
         
         return None
     
+    def verify_credentials(self, username: str, password: str) -> Optional[Tuple[TenantConfig, str]]:
+        """Verify username/password and return (tenant, api_key)"""
+        password_hash = self._hash(password)
+        
+        for tenant in self.tenants.values():
+            if tenant.username == username and tenant.password_hash == password_hash:
+                if tenant.expires_at:
+                    expires = datetime.fromisoformat(tenant.expires_at)
+                    if datetime.now() > expires:
+                        return None
+                return tenant, tenant.api_key
+        
+        return None
+    
     def get_tenant(self, tenant_id: str) -> Optional[TenantConfig]:
         """Get tenant by ID"""
         return self.tenants.get(tenant_id)
+    
+    def get_tenant_by_username(self, username: str) -> Optional[TenantConfig]:
+        """Get tenant by username"""
+        for tenant in self.tenants.values():
+            if tenant.username == username:
+                return tenant
+        return None
     
     def update_tenant(self, tenant_id: str, **kwargs) -> bool:
         """Update tenant configuration"""
@@ -245,7 +326,6 @@ class TenantManager:
         
         today = datetime.now().strftime("%Y-%m-%d")
         
-        # Find or create today's stats
         today_stats = None
         for stats in self.usage_stats[tenant_id]:
             if stats.date == today:
@@ -259,7 +339,6 @@ class TenantManager:
             )
             self.usage_stats[tenant_id].append(today_stats)
         
-        # Update stats
         today_stats.queries_made += query_count
         today_stats.storage_bytes_used += storage_bytes
         today_stats.api_calls += api_calls
@@ -277,13 +356,11 @@ class TenantManager:
         if not tenant:
             return False, "Tenant not found"
         
-        # Check expiration
         if tenant.expires_at:
             expires = datetime.fromisoformat(tenant.expires_at)
             if datetime.now() > expires:
                 return False, "Subscription expired"
         
-        # Get today's usage
         today = datetime.now().strftime("%Y-%m-%d")
         today_stats = None
         for stats in self.usage_stats.get(tenant_id, []):
@@ -293,18 +370,17 @@ class TenantManager:
         
         queries_today = today_stats.queries_made if today_stats else 0
         
-        # Check operation-specific limits
         if operation == "query":
             if queries_today >= tenant.max_queries_per_day:
                 return False, f"Daily query limit reached ({tenant.max_queries_per_day})"
         
-        elif operation == "store_confidential":
-            if not tenant.can_store_confidential:
-                return False, "Confidential storage not allowed on current tier"
+        elif operation in ("store_permanent", "store_confidential"):
+            if not tenant.can_store_permanent:
+                return False, "Permanent storage not allowed for this role"
         
         elif operation == "api_call":
             if not tenant.can_use_api:
-                return False, "API access not allowed on current tier"
+                return False, "API access not allowed"
         
         return True, "OK"
     
@@ -316,7 +392,6 @@ class TenantManager:
         tenant = self.tenants[tenant_id]
         stats = self.usage_stats.get(tenant_id, [])
         
-        # Filter to last N days
         cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
         recent_stats = [s for s in stats if s.date >= cutoff]
         
@@ -326,8 +401,9 @@ class TenantManager:
         
         return {
             "tenant_id": tenant_id,
+            "username": tenant.username,
             "name": tenant.name,
-            "tier": tenant.tier.value,
+            "role": tenant.role.value,
             "period_days": days,
             "summary": {
                 "total_queries": total_queries,
@@ -355,132 +431,14 @@ class TenantManager:
         return [
             {
                 "tenant_id": t.tenant_id,
+                "username": t.username,
                 "name": t.name,
-                "tier": t.tier.value,
+                "role": t.role.value,
                 "created_at": t.created_at,
                 "expires_at": t.expires_at
             }
             for t in self.tenants.values()
         ]
-    
-    def build_query_filter(self, tenant_id: str) -> Optional[Dict]:
-        """
-        Build ChromaDB filter for tenant isolation
-        """
-        tenant = self.tenants.get(tenant_id)
-        if not tenant:
-            return None
-        
-        # Community tier: public documents only
-        if tenant.tier == AccessTier.COMMUNITY:
-            return {"access_level": "public"}
-        
-        # Professional/Enterprise: public + tenant's own documents
-        return {
-            "$or": [
-                {"access_level": "public"},
-                {"tenant_id": tenant_id}
-            ]
-        }
-
-
-class AccessControl:
-    """
-    Decorator-based access control for API endpoints
-    """
-    
-    def __init__(self, tenant_manager: TenantManager):
-        self.tenant_manager = tenant_manager
-    
-    def require_auth(self, f):
-        """Decorator to require API key authentication"""
-        def wrapper(*args, **kwargs):
-            # Extract API key from request
-            api_key = self._extract_api_key(args, kwargs)
-            
-            tenant = self.tenant_manager.verify_api_key(api_key)
-            if not tenant:
-                return {"error": "Invalid or expired API key"}, 401
-            
-            # Add tenant to kwargs
-            kwargs['tenant'] = tenant
-            return f(*args, **kwargs)
-        
-        return wrapper
-    
-    def require_tier(self, min_tier: AccessTier):
-        """Decorator to require minimum tier"""
-        def decorator(f):
-            def wrapper(*args, **kwargs):
-                tenant = kwargs.get('tenant')
-                if not tenant:
-                    return {"error": "Authentication required"}, 401
-                
-                tier_levels = {
-                    AccessTier.COMMUNITY: 1,
-                    AccessTier.PROFESSIONAL: 2,
-                    AccessTier.ENTERPRISE: 3
-                }
-                
-                if tier_levels[tenant.tier] < tier_levels[min_tier]:
-                    return {
-                        "error": f"This feature requires {min_tier.value} tier or higher"
-                    }, 403
-                
-                return f(*args, **kwargs)
-            
-            return wrapper
-        return decorator
-    
-    def check_quota(self, operation: str):
-        """Decorator to check quota before operation"""
-        def decorator(f):
-            def wrapper(*args, **kwargs):
-                tenant = kwargs.get('tenant')
-                if not tenant:
-                    return {"error": "Authentication required"}, 401
-                
-                allowed, reason = self.tenant_manager.check_quota(
-                    tenant.tenant_id, operation
-                )
-                
-                if not allowed:
-                    return {"error": reason}, 429
-                
-                # Record usage after successful call
-                result = f(*args, **kwargs)
-                self.tenant_manager.record_usage(
-                    tenant.tenant_id,
-                    query_count=1 if operation == "query" else 0
-                )
-                
-                return result
-            
-            return wrapper
-        return decorator
-    
-    def _extract_api_key(self, args, kwargs) -> Optional[str]:
-        """Extract API key from request"""
-        # Check kwargs
-        if 'api_key' in kwargs:
-            return kwargs['api_key']
-        
-        # Check for request object (Flask/FastAPI style)
-        if 'request' in kwargs:
-            request = kwargs['request']
-            # Header
-            if hasattr(request, 'headers'):
-                api_key = request.headers.get('X-API-Key')
-                if api_key:
-                    return api_key
-            
-            # Query param
-            if hasattr(request, 'args'):
-                api_key = request.args.get('api_key')
-                if api_key:
-                    return api_key
-        
-        return None
 
 
 def main():
@@ -490,21 +448,20 @@ def main():
     parser = argparse.ArgumentParser(description="Tenant Manager CLI")
     subparsers = parser.add_subparsers(dest='command', help='Command')
     
-    # Create tenant
-    create_parser = subparsers.add_parser('create', help='Create new tenant')
-    create_parser.add_argument('--name', '-n', required=True, help='Tenant name')
-    create_parser.add_argument('--tier', '-t', choices=['community', 'professional', 'enterprise'],
-                              default='community', help='Access tier')
+    create_parser = subparsers.add_parser('create', help='Create new user')
+    create_parser.add_argument('--username', '-u', required=True, help='Username')
+    create_parser.add_argument('--name', '-n', required=True, help='Display name')
+    create_parser.add_argument('--role', '-r', choices=['admin', 'staff', 'user'],
+                              default='user', help='User role')
+    create_parser.add_argument('--password', '-p', required=True, help='Password')
+    create_parser.add_argument('--api-key', '-k', help='Optional fixed API key')
     create_parser.add_argument('--days', '-d', type=int, default=365, help='Days valid')
     
-    # List tenants
-    subparsers.add_parser('list', help='List all tenants')
+    subparsers.add_parser('list', help='List all users')
     
-    # Delete tenant
-    delete_parser = subparsers.add_parser('delete', help='Delete tenant')
+    delete_parser = subparsers.add_parser('delete', help='Delete user')
     delete_parser.add_argument('tenant_id', help='Tenant ID')
     
-    # Usage report
     usage_parser = subparsers.add_parser('usage', help='Show usage report')
     usage_parser.add_argument('tenant_id', help='Tenant ID')
     usage_parser.add_argument('--days', '-d', type=int, default=30, help='Days to report')
@@ -514,35 +471,42 @@ def main():
     manager = TenantManager()
     
     if args.command == 'create':
-        tier = AccessTier(args.tier)
-        tenant_id, api_key = manager.create_tenant(args.name, tier, args.days)
-        print(f"\n✓ Tenant created")
+        role = UserRole(args.role)
+        tenant_id, api_key = manager.create_user(
+            username=args.username,
+            name=args.name,
+            role=role,
+            password=args.password,
+            api_key=args.api_key,
+            days_valid=args.days
+        )
+        print(f"\n✓ User created")
         print(f"  ID: {tenant_id}")
-        print(f"  Name: {args.name}")
-        print(f"  Tier: {args.tier}")
+        print(f"  Username: {args.username}")
+        print(f"  Role: {args.role}")
         print(f"  API Key: {api_key}")
         print(f"\n⚠️  Save the API key securely - it cannot be retrieved later!")
     
     elif args.command == 'list':
         tenants = manager.list_tenants()
-        print(f"\n{'ID':<36} {'Name':<30} {'Tier':<15} {'Expires':<20}")
+        print(f"\n{'ID':<36} {'Username':<15} {'Name':<20} {'Role':<10} {'Expires':<20}")
         print("-" * 100)
         for t in tenants:
-            print(f"{t['tenant_id']:<36} {t['name']:<30} {t['tier']:<15} {t['expires_at'] or 'Never':<20}")
+            print(f"{t['tenant_id']:<36} {t['username']:<15} {t['name']:<20} {t['role']:<10} {t['expires_at'] or 'Never':<20}")
     
     elif args.command == 'delete':
         if manager.delete_tenant(args.tenant_id):
-            print(f"✓ Tenant {args.tenant_id} deleted")
+            print(f"✓ User {args.tenant_id} deleted")
         else:
-            print(f"✗ Tenant not found")
+            print(f"✗ User not found")
     
     elif args.command == 'usage':
         report = manager.get_usage_report(args.tenant_id, args.days)
         if 'error' in report:
             print(f"✗ {report['error']}")
         else:
-            print(f"\nUsage Report: {report['name']}")
-            print(f"Tier: {report['tier']}")
+            print(f"\nUsage Report: {report['name']} ({report['username']})")
+            print(f"Role: {report['role']}")
             print(f"Period: Last {report['period_days']} days")
             print(f"\nSummary:")
             print(f"  Queries: {report['summary']['total_queries']}")

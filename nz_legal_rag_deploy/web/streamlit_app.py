@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-NZ Legal RAG v1.4 - Robust PDF Extraction + Error Handling
+NZ Legal RAG v1.5 - Online Demo App
+Role-based login with temporary/permanent storage
 """
 
 import os
 import sys
+import uuid
 import json
 from pathlib import Path
 import streamlit as st
@@ -12,10 +14,9 @@ import requests
 from io import BytesIO
 
 # PDF extraction
-# PDF extraction
 try:
     import pypdf
-    HAS_PYPDF = True  # Fixed: PYPDF (uppercase)
+    HAS_PYPDF = True
 except ImportError:
     HAS_PYPDF = False
 
@@ -25,7 +26,7 @@ def extract_pdf_text(pdf_file) -> str:
         return None
     
     try:
-        pdf_reader = pypdf.PdfReader(pdf_file)  # Fixed: pypdf.PdfReader
+        pdf_reader = pypdf.PdfReader(pdf_file)
         text = ""
         for page in pdf_reader.pages:
             text += page.extract_text() + "\n"
@@ -63,12 +64,18 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 def init_session():
     """Initialize session state"""
-    if 'api_key' not in st.session_state:
-        st.session_state.api_key = None
-    if 'tenant_info' not in st.session_state:
-        st.session_state.tenant_info = None
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
+    defaults = {
+        'api_key': None,
+        'tenant_info': None,
+        'session_id': None,
+        'chat_history': [],
+        'username': '',
+        'password': ''
+    }
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
+
 
 def extract_file_text(f) -> str:
     """Extract text from any uploaded file (PDF, TXT, DOCX, JSON, MD)"""
@@ -105,6 +112,8 @@ def api_call(endpoint: str, method: str = "GET", data: dict = None) -> dict | No
     headers = {}
     if st.session_state.api_key:
         headers["Authorization"] = f"Bearer {st.session_state.api_key}"
+    if st.session_state.session_id:
+        headers["X-Session-ID"] = st.session_state.session_id
     
     url = f"{API_URL}{endpoint}"
     
@@ -118,10 +127,13 @@ def api_call(endpoint: str, method: str = "GET", data: dict = None) -> dict | No
             return None
         
         if response.status_code == 401:
-            st.error("Invalid API key. Please check your credentials.")
-            st.session_state.api_key = None
-            st.session_state.tenant_info = None
+            st.error("Session expired. Please sign in again.")
+            _do_logout(local_only=True)
             st.rerun()
+            return None
+        
+        if response.status_code == 403:
+            st.error("You do not have permission to perform this action.")
             return None
         
         response.raise_for_status()
@@ -138,29 +150,64 @@ def api_call(endpoint: str, method: str = "GET", data: dict = None) -> dict | No
         return None
 
 
-def login():
-    """Login with API key"""
-    st.markdown("### 🔐 Authentication")
+def _do_logout(local_only: bool = False):
+    """Clear server-side session storage then local state"""
+    if not local_only and st.session_state.get('session_id') and st.session_state.get('api_key'):
+        # Best-effort server cleanup
+        try:
+            headers = {
+                "Authorization": f"Bearer {st.session_state.api_key}",
+                "X-Session-ID": st.session_state.session_id
+            }
+            requests.post(f"{API_URL}/api/v1/ingest/clear-session", headers=headers, timeout=10)
+        except Exception:
+            pass
     
-    api_key = st.text_input(
-        "Enter your API Key",
-        type="password",
-        help="Enter your API key to access the legal database"
-    )
+    for key in ['api_key', 'tenant_info', 'session_id', 'chat_history', 'username', 'password']:
+        if key in st.session_state:
+            del st.session_state[key]
+    init_session()
+
+
+def login():
+    """Login with username and password"""
+    st.markdown("### 🔐 Demo Login")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        username = st.text_input("Username", value=st.session_state.get('username', ''))
+    with col2:
+        password = st.text_input("Password", type="password", value=st.session_state.get('password', ''))
     
     if st.button("Sign In", type="primary"):
-        if api_key:
-            st.session_state.api_key = api_key
-            tenant_info = api_call("/api/v1/tenant/me")
-            
-            if tenant_info:
-                st.session_state.tenant_info = tenant_info
-                st.success(f"✅ Welcome, {tenant_info.get('name', 'User')}!")
-                st.rerun()
-            else:
-                st.error("Login failed. Check API key.")
+        if username and password:
+            try:
+                response = requests.post(
+                    f"{API_URL}/api/v1/login",
+                    json={"username": username, "password": password},
+                    timeout=15
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    st.session_state.api_key = data["api_key"]
+                    st.session_state.tenant_info = data
+                    st.session_state.session_id = str(uuid.uuid4())
+                    st.session_state.username = username
+                    st.session_state.password = password
+                    st.success(f"✅ Welcome, {data.get('name', 'User')}!")
+                    st.rerun()
+                else:
+                    st.error("Invalid username or password.")
+            except Exception as e:
+                st.error(f"Login failed: {str(e)}")
         else:
-            st.error("Please enter an API key")
+            st.error("Please enter both username and password.")
+    
+    st.markdown("---")
+    st.markdown("**Demo Accounts:**")
+    st.markdown("- `admin` / `demo-admin-2024!`  (Admin)")
+    st.markdown("- `staff` / `demo-staff-2024!`  (Staff)")
+    st.markdown("- `user` / `demo-user-2024!`    (User)")
 
 
 def show_sidebar():
@@ -168,13 +215,16 @@ def show_sidebar():
     with st.sidebar:
         st.title("⚖️ NZ Legal RAG")
         
+        tenant_info = st.session_state.get('tenant_info', {})
+        role = (tenant_info.get('role') or '').lower()
+        
         # Documents Upload Menu
         st.markdown("---")
         with st.expander("📂 Manage Documents", expanded=False):
             st.markdown("#### 📤 Upload Documents")
             
             # Session temporary - All users
-            st.markdown("**⏳ Session Temporary** (clears on restart)")
+            st.markdown("**⏳ Session Temporary** (clears on sign out)")
             temp_files = st.file_uploader(
                 "Upload personal/private files", 
                 type=['pdf', 'docx', 'txt', 'json', 'md'],
@@ -195,7 +245,7 @@ def show_sidebar():
                 
                 if documents:
                     result = api_call("/api/v1/ingest/temporary", "POST", {"documents": documents})
-                    if result:
+                    if result and result.get("success"):
                         st.success(f"✅ {len(documents)} files → Session DB")
                     else:
                         st.error("❌ Session upload failed")
@@ -203,74 +253,73 @@ def show_sidebar():
                 if errors:
                     st.warning(f"⚠️ Could not read: {', '.join(errors)}")
             
-            # Permanent - Professional Tier only
-            if st.session_state.get('tenant_info'):
-                tenant_info = st.session_state.tenant_info
-                tier = tenant_info.get("tier", "").lower()
-                is_professional = tier == "professional"
+            if role == 'user':
+                st.info("🔒 **Permanent storage is disabled for demo users.**")
+                if st.button("🗑️ Clear Session Files"):
+                    result = api_call("/api/v1/ingest/clear-session", "POST")
+                    if result:
+                        st.success("Session temporary storage cleared.")
+                    else:
+                        st.error("Failed to clear session storage.")
+            
+            # Permanent - Admin & Staff only
+            if role in ('admin', 'staff'):
+                st.markdown("**🏛️ Permanent DB** (Admin & Staff only)")
+                perm_files = st.file_uploader(
+                    "Upload official documents", 
+                    type=['pdf', 'docx', 'txt', 'json'],
+                    accept_multiple_files=True,
+                    key="permanent_upload"
+                )
                 
-                if is_professional:
-                    st.markdown("**🏛️ Permanent DB** (Professional Tier)")
-                    perm_files = st.file_uploader(
-                        "Upload official documents", 
-                        type=['pdf', 'docx', 'txt', 'json'],
-                        accept_multiple_files=True,
-                        key="permanent_upload"
-                    )
+                if perm_files and st.button("💾 Save to Permanent DB", key="save_permanent"):
+                    documents = []
+                    errors = []
                     
-                    if perm_files and st.button("💾 Save to Permanent DB", key="save_permanent"):
-                        documents = []
-                        errors = []
-                        
-                        for f in perm_files:
-                            content = extract_file_text(f)
-                            if content:
-                                documents.append({"name": f.name, "content": content})
-                            else:
-                                errors.append(f.name)
-                        
-                        if documents:
-                            result = api_call("/api/v1/ingest/permanent", "POST", {"documents": documents})
-                            if result:
-                                st.success(f"✅ {len(documents)} files → Permanent DB")
-                            else:
-                                st.error("❌ Permanent upload failed")
-                        
-                        if errors:
-                            st.warning(f"⚠️ Could not read: {', '.join(errors)}")
-                else:
-                    st.info("🔒 **Permanent storage**: Professional Tier only")
+                    for f in perm_files:
+                        content = extract_file_text(f)
+                        if content:
+                            documents.append({"name": f.name, "content": content})
+                        else:
+                            errors.append(f.name)
+                    
+                    if documents:
+                        result = api_call("/api/v1/ingest/permanent", "POST", {"documents": documents})
+                        if result and result.get("success"):
+                            st.success(f"✅ {len(documents)} files → Permanent DB")
+                        else:
+                            st.error("❌ Permanent upload failed")
+                    
+                    if errors:
+                        st.warning(f"⚠️ Could not read: {', '.join(errors)}")
         
         st.markdown("---")
         
         # Tenant info display
-        if st.session_state.get('tenant_info'):
-            tenant = st.session_state.tenant_info
-            st.success(f"👤 Logged in: **{tenant.get('name', 'User')}**")
-            st.info(f"⭐ Tier: **{tenant.get('tier', 'Unknown').upper()}**")
+        if tenant_info:
+            st.success(f"👤 Logged in: **{tenant_info.get('name', 'User')}**")
+            st.info(f"⭐ Role: **{tenant_info.get('role', 'Unknown').upper()}**")
             
             with st.expander("📊 Quota Information"):
-                quotas = tenant.get('quotas', {})
+                quotas = tenant_info.get('quotas', {})
                 col1, col2, col3 = st.columns(3)
                 with col1: st.metric("Queries/day", quotas.get('max_queries_per_day', 0))
                 with col2: st.metric("Storage", f"{quotas.get('max_storage_bytes', 0)/1e9:.1f} GB")
                 with col3: st.metric("Documents", quotas.get('max_documents', 0))
             
             if st.button("🚪 Sign Out"):
-                for key in ['api_key', 'tenant_info', 'chat_history']:
-                    if key in st.session_state:
-                        del st.session_state[key]
+                _do_logout()
                 st.rerun()
         
         st.markdown("---")
         
         # Navigation
         st.subheader("🌐 Navigation")
-        page = st.radio(
-            "Choose feature:",
-            ["🏠 Home", "🔍 Search", "📊 Analysis", "📋 Similar Cases", "✅ Element Check", "📈 Usage"],
-            index=0
-        )
+        pages = ["🏠 Home", "🔍 Search", "📊 Analysis", "📋 Similar Cases", "✅ Element Check", "📈 Usage"]
+        if role == 'admin':
+            pages.append("👥 Admin Panel")
+        
+        page = st.radio("Choose feature:", pages, index=0)
         return page
 
 
@@ -318,8 +367,8 @@ def show_search():
     with col1:
         collections = st.multiselect(
             "Filter collections:", 
-            ["legislation", "case_law", "police_manual"],
-            default=["legislation", "case_law"]
+            ["nz_legislation", "nzlii_criminal_cases", "nz_legal_unified"],
+            default=["nz_legislation", "nzlii_criminal_cases"]
         )
     with col2:
         st.caption("Leave empty for all collections")
@@ -423,7 +472,7 @@ def show_element_check():
                 st.markdown("### 📋 Element Analysis")
                 for elem in result['elements']:
                     status = elem.get('status', '').lower()
-                    if 'satisfied' in status or 'met' in status:
+                    if 'satisfied' in status or 'met' in status or 'proven' in status:
                         st.success(f"✅ **{elem.get('element', '')}**")
                         st.caption(elem.get('reasoning', ''))
                     else:
@@ -461,6 +510,27 @@ def show_usage():
         st.warning("Cannot fetch usage data")
 
 
+def show_admin_panel():
+    """Admin panel page"""
+    st.title("👥 Admin Panel")
+    
+    tenant_info = st.session_state.get('tenant_info', {})
+    if tenant_info.get('role') != 'admin':
+        st.error("Admin access required")
+        return
+    
+    st.subheader("Demo Users")
+    admin_key = os.getenv("ADMIN_API_KEY", "dev-key-change-in-production")
+    result = api_call(f"/api/v1/admin/tenants?admin_key={admin_key}")
+    
+    if result and 'tenants' in result:
+        for t in result['tenants']:
+            with st.expander(f"{t.get('username')} — {t.get('name')} ({t.get('role')})"):
+                st.json(t)
+    else:
+        st.warning("Unable to load tenant list")
+
+
 def main():
     """Main application function"""
     init_session()
@@ -484,8 +554,9 @@ def main():
         show_element_check()
     elif page == "📈 Usage":
         show_usage()
+    elif page == "👥 Admin Panel":
+        show_admin_panel()
 
 
 if __name__ == "__main__":
     main()
-

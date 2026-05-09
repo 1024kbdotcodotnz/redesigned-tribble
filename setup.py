@@ -51,7 +51,7 @@ def pull_models():
     models = [
         ("nomic-embed-text:latest", "Embedding model"),
         ("mixtral:latest", "Primary LLM (large, best quality)"),
-        ("llama3.1:latest", "Alternative LLM (faster)"),
+        ("deepseek-r1:14b", "Alternative LLM (faster)"),
         ("mistral:latest", "Alternative LLM (balanced)")
     ]
     

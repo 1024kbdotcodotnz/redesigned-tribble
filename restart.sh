@@ -23,7 +23,7 @@ ollama list | grep -E "(llama3.1|deepseek-r1|nomic-embed-text)"
 
 echo ""
 echo "=== Starting API server ==="
-PYTHONPATH="$APP_DIR" LLM_MODEL=llama3.1:8b python3 -m api.server > /tmp/api.log 2>&1 &
+PYTHONPATH="$APP_DIR" LLM_MODEL=deepseek-r1:14b python3 -m api.server > /tmp/api.log 2>&1 &
 API_PID=$!
 
 echo "=== Starting Streamlit ==="

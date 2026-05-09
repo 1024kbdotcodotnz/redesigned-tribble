@@ -160,9 +160,9 @@ RESPOND WITH EXACTLY THIS JSON SCHEMA:
                         available: List[str]) -> IntakeResult:
         """Convert parsed JSON into a typed IntakeResult."""
 
-        analysis_type = parsed.get("detected_analysis_type", "general").lower().strip()
-        if analysis_type not in self.ANALYSIS_TYPES:
-            analysis_type = "general"
+        analysis_type = str(parsed.get("detected_analysis_type") or "general").lower().strip()
+``````if analysis_type not in self.ANALYSIS_TYPES:
+    ``analysis_type = "general"
 
         suggested = parsed.get("suggested_collections", [])
         # Filter to only collections that actually exist
@@ -189,7 +189,7 @@ RESPOND WITH EXACTLY THIS JSON SCHEMA:
             search_queries = [raw_query]
 
         # Ensure refined_query exists
-        refined = parsed.get("refined_query", "").strip()
+        refined = str(parsed.get("refined_query") or "").strip()
         if not refined:
             refined = raw_query
 

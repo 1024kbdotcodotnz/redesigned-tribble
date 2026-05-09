@@ -1,0 +1,35 @@
+# Core dependencies
+chromadb>=0.4.0
+langchain>=0.1.0
+langchain-community>=0.0.10
+langchain-text-splitters>=0.0.1
+ollama>=0.1.0
+
+# API Framework
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# Web Interface
+streamlit>=1.28.0
+
+# Security
+cryptography>=41.0.0
+
+# Data processing
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Document parsing
+PyPDF2>=3.0.0
+python-docx>=1.1.0
+
+# Utilities
+tqdm>=4.66.0
+python-dotenv>=1.0.0
+
+# Optional: For production deployment
+# gunicorn>=21.0.0
+# redis>=5.0.0

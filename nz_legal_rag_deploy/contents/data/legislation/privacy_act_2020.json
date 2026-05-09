@@ -1,0 +1,18 @@
+{
+  "title": "Privacy Act 2020",
+  "act_id": "privacy_act_2020",
+  "sections": [
+    {
+      "number": "s 22",
+      "title": "Information privacy principles",
+      "content": "Agencies must not collect personal information unless it is necessary and collected in a lawful manner."
+    },
+    {
+      "number": "s 66",
+      "title": "Disclosure of personal information",
+      "content": "An agency must not disclose personal information to any other agency or person, unless an exception applies."
+    }
+  ],
+  "parsed_date": "2026-03-03T10:06:15.417927",
+  "source": "Manual compilation"
+}

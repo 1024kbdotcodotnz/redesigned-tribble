@@ -34,6 +34,11 @@ python-dotenv>=1.0.0
 # MCP Server
 fastmcp>=2.0.0
 
+# PDF export for analysis reports
+fpdf2>=2.7.0
+
+langchain-ollama>=0.1.0
+
 # Optional: For production deployment
 # gunicorn>=21.0.0
 # redis>=5.0.0

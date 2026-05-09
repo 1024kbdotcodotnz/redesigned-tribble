@@ -1,0 +1,48 @@
+{
+  "title": "Sale and Supply of Alcohol Act 2012",
+  "act_id": "sale_supply_alcohol_act_2012",
+  "sections": [
+    {
+      "number": "s 13",
+      "title": "Sale of alcohol to minors prohibited",
+      "content": "A licensee or manager must not allow alcohol to be sold or supplied to any person under the purchase age (18 years). Maximum penalty: $10,000."
+    },
+    {
+      "number": "s 14",
+      "title": "Supply of alcohol to minors prohibited",
+      "content": "No person may supply alcohol to a person under the purchase age unless they are the parent or guardian and the supply is responsible."
+    },
+    {
+      "number": "s 56",
+      "title": "Sale or supply of alcohol to intoxicated people",
+      "content": "A licensee or manager must not allow alcohol to be sold or supplied to a person who is intoxicated. Maximum penalty: $10,000."
+    },
+    {
+      "number": "s 241",
+      "title": "Police powers of entry",
+      "content": "A constable may enter any licensed premises at any reasonable time for the purpose of inspecting the premises and ensuring compliance with this Act."
+    },
+    {
+      "number": "s 243",
+      "title": "Power to require production of licence",
+      "content": "A constable may require the licensee or manager of licensed premises to produce the licence for inspection."
+    },
+    {
+      "number": "s 245",
+      "title": "Power to remove persons",
+      "content": "A constable or a person acting with the authority of the licensee or manager may remove from licensed premises any person who is intoxicated, violent, quarrelsome, or disorderly."
+    },
+    {
+      "number": "s 246",
+      "title": "Power of search and seizure",
+      "content": "A constable who has reasonable grounds to believe that an offence against this Act has been committed may search any person, vehicle, or thing and may seize any item that may be evidence."
+    },
+    {
+      "number": "s 248",
+      "title": "Controlled purchase operations",
+      "content": "Police may conduct controlled purchase operations to test compliance with the Act. This involves using persons under the purchase age to attempt to purchase alcohol."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002840",
+  "source": "Comprehensive compilation"
+}

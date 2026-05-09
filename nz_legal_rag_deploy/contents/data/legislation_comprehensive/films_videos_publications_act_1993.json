@@ -1,0 +1,28 @@
+{
+  "title": "Films, Videos, and Publications Classification Act 1993",
+  "act_id": "films_videos_publications_act_1993",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Objectionable publication",
+      "content": "A publication is objectionable if it describes, depicts, expresses, or otherwise deals with matters such as sex, horror, crime, cruelty, or violence in such a manner that it is likely to be injurious to the public good."
+    },
+    {
+      "number": "s 123",
+      "title": "Possession of objectionable publication",
+      "content": "Every person who knowingly has in their possession any objectionable publication is liable to imprisonment for a term not exceeding 10 years."
+    },
+    {
+      "number": "s 124",
+      "title": "Distribution of objectionable publication",
+      "content": "Every person who knowingly distributes or makes available any objectionable publication is liable to imprisonment for a term not exceeding 14 years."
+    },
+    {
+      "number": "s 131",
+      "title": "Inspection and search powers",
+      "content": "An Inspector of Publications or a constable may enter premises and inspect or search for publications where they have reasonable grounds to believe an offence is being committed."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003584",
+  "source": "Comprehensive compilation"
+}

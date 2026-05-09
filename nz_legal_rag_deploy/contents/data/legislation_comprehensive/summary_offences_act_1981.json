@@ -1,0 +1,58 @@
+{
+  "title": "Summary Offences Act 1981",
+  "act_id": "summary_offences_act_1981",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Disorderly behaviour",
+      "content": "Every person is liable to a fine not exceeding $1,000 who, in any public place, behaves in a disorderly manner. Disorderly behaviour includes fighting, using threatening or insulting words, or behaving in a manner likely to cause violence or a breach of the peace."
+    },
+    {
+      "number": "s 4",
+      "title": "Offensive language",
+      "content": "Every person is liable to a fine not exceeding $500 who, in any public place, uses indecent or obscene words. The language must be likely to cause annoyance or offence to a reasonable person in the vicinity."
+    },
+    {
+      "number": "s 5",
+      "title": "Wilful damage",
+      "content": "Every person is liable to imprisonment for a term not exceeding 3 months or a fine not exceeding $2,000 who intentionally destroys or damages any property (public or private) without claim of right."
+    },
+    {
+      "number": "s 9",
+      "title": "Assault on Police",
+      "content": "Every person is liable to imprisonment for a term not exceeding 6 months or a fine not exceeding $4,000 who assaults any constable or any person acting in aid of any constable in the execution of their duty."
+    },
+    {
+      "number": "s 10",
+      "title": "Resisting Police",
+      "content": "Every person is liable to imprisonment for a term not exceeding 6 months or a fine not exceeding $4,000 who resists any constable or any person acting in aid of any constable in the execution of their duty."
+    },
+    {
+      "number": "s 11",
+      "title": "Trespass",
+      "content": "Every person is liable to a fine not exceeding $1,000 who trespasses on any place (public or private). A person trespasses who enters or remains without permission or lawful authority. Warning may be oral or written."
+    },
+    {
+      "number": "s 13",
+      "title": "Possession of offensive weapon or knife in public place",
+      "content": "Every person is liable to imprisonment for a term not exceeding 2 years or a fine not exceeding $5,000 who, without reasonable excuse, has in their possession in a public place any offensive weapon or knife."
+    },
+    {
+      "number": "s 14",
+      "title": "Possession of offensive weapon or knife in school or court",
+      "content": "Every person is liable to imprisonment for a term not exceeding 3 years or a fine not exceeding $7,500 who, without reasonable excuse, has in their possession in any school or court any offensive weapon or knife."
+    },
+    {
+      "number": "s 17",
+      "title": "Drunkenness in public place",
+      "content": "Every person is liable to a fine not exceeding $500 who is in a state of intoxication in any public place. This does not apply if the person is in a licensed premises."
+    },
+    {
+      "number": "s 21",
+      "title": "Breach of bail",
+      "content": "Every person commits an offence who, being on bail, fails without reasonable excuse to comply with any condition of bail. Maximum penalty: imprisonment not exceeding 3 months or fine not exceeding $1,000."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002200",
+  "source": "Comprehensive compilation"
+}

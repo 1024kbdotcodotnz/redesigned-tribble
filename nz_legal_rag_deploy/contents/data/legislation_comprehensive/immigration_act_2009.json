@@ -1,0 +1,28 @@
+{
+  "title": "Immigration Act 2009",
+  "act_id": "immigration_act_2009",
+  "sections": [
+    {
+      "number": "s 157",
+      "title": "Deportation liability",
+      "content": "Persons may be liable for deportation if they commit a criminal offence within 10 years of first permit (for residence visa holders) or if sentenced to imprisonment of 12 months or more."
+    },
+    {
+      "number": "s 312",
+      "title": "Offence to provide false or misleading information",
+      "content": "Every person commits an offence who provides false or misleading information to an immigration officer. Maximum penalty: imprisonment up to 7 years or fine up to $100,000."
+    },
+    {
+      "number": "s 313",
+      "title": "Offence to obstruct or hinder",
+      "content": "Every person commits an offence who obstructs or hinders any immigration officer in the exercise of their powers under this Act."
+    },
+    {
+      "number": "s 340",
+      "title": "Powers of immigration officers",
+      "content": "Immigration officers have powers to question persons, require documents, and in certain circumstances, enter premises and arrest persons who are liable for deportation."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003364",
+  "source": "Comprehensive compilation"
+}

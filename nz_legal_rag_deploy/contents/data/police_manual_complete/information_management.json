@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Information Management",
+  "chapter": "I",
+  "section": "Privacy and Official Information",
+  "category": "Information Management",
+  "content": "\nPOLICE MANUAL - INFORMATION MANAGEMENT\n\nPrivacy Act 2020\nOfficial Information Act 1982\n\nPrivacy Principles:\n1. Purpose - collect for lawful purpose\n2. Source - collect from individual if possible\n3. Collection - lawful and fair\n4. Manner - not unreasonably intrusive\n5. Storage and security - protect from loss/unauthorized access\n6. Access - individuals can access their information\n7. Correction - individuals can request correction\n8. Accuracy - ensure accuracy before use\n9. Retention - not keep longer than necessary\n10. Use - generally use for collected purpose\n11. Disclosure - generally not disclose to others\n12. Unique identifiers - not assign unnecessarily\n\nPolice National Intelligence Application (NIA):\n- Central database\n- Records of convictions\n- Wanted persons\n- Protection orders\n- Driver licence information\n- Vehicle registration\n- Firearms licence\n- Access controlled\n- Audit trail maintained\n\nInformation Release:\n- To other agencies (controlled)\n- To victims (rights under Victims' Rights Act)\n- To media (limited, strategic)\n- To defense (disclosure obligations)\n- To public (OIA requests)\n\nOfficial Information Act Requests:\n- 20 working day response time\n- Can refuse on specified grounds\n- Must transfer if not held\n- Ombudsman oversight\n- Charges may apply\n\nUnauthorised Access:\n- Offence to access without authority\n- Includes accessing own records\n- Includes accessing records of family/friends\n- Disciplinary consequences\n- Criminal consequences\n\nData Breaches:\n- Must report serious breaches\n- Privacy Commissioner notification\n- Affected individuals notification\n- Remediation required\n\nRelated Legislation:\n- Privacy Act 2020\n- Official Information Act 1982\n- Victims' Rights Act 2002\n- Search and Surveillance Act 2012\n",
+  "key_procedures": [
+    "Collect only necessary information",
+    "Store securely",
+    "Use only for proper purpose",
+    "Disclose only when authorized",
+    "Maintain audit trail"
+  ],
+  "priority": 3,
+  "created": "2026-03-03T10:16:31.499844",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

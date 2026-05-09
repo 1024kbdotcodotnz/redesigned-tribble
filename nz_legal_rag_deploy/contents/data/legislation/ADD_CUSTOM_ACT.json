@@ -1,0 +1,18 @@
+{
+  "title": "Example: Criminal Proceeds (Recovery) Act 2009",
+  "act_id": "criminal_proceeds_recovery_act_2009",
+  "sections": [
+    {
+      "number": "s 6",
+      "title": "Meaning of significant criminal activity",
+      "content": "Significant criminal activity means criminal activity that involves 2 or more persons acting jointly, or involves substantial planning and organisation, or is of a nature that the commission of the offence carries a maximum sentence of at least 4 years imprisonment."
+    },
+    {
+      "number": "s 7",
+      "title": "Meaning of tainted property",
+      "content": "Tainted property means property that is wholly or partly derived or realised, directly or indirectly, by any person from significant criminal activity."
+    }
+  ],
+  "parsed_date": "2026-03-02T12:00:00Z",
+  "source": "Manual entry - User contributed"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Official Information Act 1982",
+  "act_id": "official_information_act_1982",
+  "sections": [
+    {
+      "number": "s 5",
+      "title": "Good reasons for withholding",
+      "content": "Information may be withheld if necessary to protect personal privacy, commercial interests, or to maintain the effective conduct of public affairs."
+    },
+    {
+      "number": "s 9",
+      "title": "Requests for official information",
+      "content": "Any person may request official information. Agencies must respond within 20 working days."
+    }
+  ],
+  "parsed_date": "2026-03-03T10:06:15.418074",
+  "source": "Manual compilation"
+}

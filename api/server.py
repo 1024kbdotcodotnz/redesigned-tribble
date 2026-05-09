@@ -6,9 +6,13 @@ FastAPI-based REST API for legal research with role-based access.
 
 import os
 import sys
+import asyncio
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -59,6 +63,10 @@ class AnalysisRequest(BaseModel):
         default=None,
         description="Additional context or facts"
     )
+    deep_analysis: bool = Field(
+        default=False,
+        description="Run full multi-agent pipeline (slower). False = fast mode (Intake + Defence Analyst only)"
+    )
 
 
 class AnalysisResponse(BaseModel):
@@ -69,6 +77,13 @@ class AnalysisResponse(BaseModel):
     analysis_type: str
     sources: List[Dict[str, Any]]
     timestamp: str
+    # Multi-agent pipeline enrichments
+    executive_summary: Optional[str] = None
+    audit_report: Optional[str] = None
+    strategic_notes: Optional[str] = None
+    confidence_breakdown: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    agent_trace: Optional[Dict[str, Any]] = None
 
 
 class SimilarCasesRequest(BaseModel):
@@ -114,6 +129,7 @@ class UsageReport(BaseModel):
 
 class IngestRequest(BaseModel):
     documents: List[Dict[str, str]] = Field(..., description="List of {name, content} documents")
+    collection: str = Field(default="user_uploads", description="Target collection for permanent uploads")
 
 
 class IngestResponse(BaseModel):
@@ -144,7 +160,7 @@ async def lifespan(app: FastAPI):
     rag_engine = NZLegalRAG(
         db_path=os.getenv("CHROMA_DB_PATH", "./chroma_db"),
         embedding_model=os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
-        llm_model=os.getenv("LLM_MODEL", "mixtral:latest"),
+        llm_model=os.getenv("LLM_MODEL", "deepseek-r1:14b"),
         use_local_llm=True
     )
     
@@ -153,7 +169,8 @@ async def lifespan(app: FastAPI):
         storage_dir=os.getenv("TENANT_DATA_PATH", "./tenant_data")
     )
     
-    print(f"✓ Loaded {rag_engine.get_database_stats()['total_documents']} documents")
+    stats = rag_engine.get_database_stats()
+    print(f"✓ Loaded {stats['total_documents']} documents ({stats['total_chunks']} chunks)")
     print(f"✓ {len(tenant_manager.tenants)} tenants configured")
     
     yield
@@ -293,6 +310,8 @@ def health_check():
     return {
         "status": "healthy",
         "database": stats,
+        "documents": stats["total_documents"],
+        "chunks": stats["total_chunks"],
         "timestamp": datetime.now().isoformat()
     }
 
@@ -365,7 +384,8 @@ def analyze(
     analysis = rag_engine.legal_analysis(
         query=full_query,
         analysis_type=request.analysis_type,
-        collections=collections
+        collections=collections,
+        deep_analysis=request.deep_analysis
     )
     
     tenant_manager.record_usage(tenant.tenant_id, query_count=1)
@@ -384,7 +404,13 @@ def analyze(
             }
             for s in analysis.sources
         ],
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "executive_summary": analysis.executive_summary or None,
+        "audit_report": analysis.audit_report or None,
+        "strategic_notes": analysis.strategic_notes or None,
+        "confidence_breakdown": analysis.confidence_breakdown or None,
+        "metadata": analysis.metadata or None,
+        "agent_trace": analysis.agent_trace or None,
     }
 
 
@@ -481,7 +507,7 @@ def get_usage(
 
 # Ingest endpoints
 @app.post("/api/v1/ingest/permanent", response_model=IngestResponse)
-def ingest_permanent(
+async def ingest_permanent(
     request: IngestRequest,
     tenant: TenantConfig = Depends(require_role(UserRole.ADMIN, UserRole.STAFF))
 ):
@@ -491,9 +517,11 @@ def ingest_permanent(
     if len(request.documents) > 50:
         raise HTTPException(status_code=400, detail="Maximum 50 documents per upload")
     
-    msg = rag_engine.ingest_text(
+    target_collection = request.collection if request.collection else "user_uploads"
+    msg = await asyncio.to_thread(
+        rag_engine.ingest_text,
         documents=request.documents,
-        collection="user_uploads",
+        collection=target_collection,
         metadata={"uploaded_by": tenant.username, "role": tenant.role.value}
     )
     
@@ -519,7 +547,7 @@ def ingest_permanent(
 
 
 @app.post("/api/v1/ingest/temporary", response_model=IngestResponse)
-def ingest_temporary(
+async def ingest_temporary(
     request: IngestRequest,
     session_id: str = Header(..., alias="X-Session-ID"),
     tenant: TenantConfig = Depends(get_current_tenant)
@@ -532,7 +560,8 @@ def ingest_temporary(
         raise HTTPException(status_code=400, detail="Maximum 20 temporary documents per upload")
     
     collection_name = f"temp_session_{session_id}"
-    msg = rag_engine.ingest_text(
+    msg = await asyncio.to_thread(
+        rag_engine.ingest_text,
         documents=request.documents,
         collection=collection_name,
         metadata={"uploaded_by": tenant.username, "session_id": session_id, "temporary": True}
@@ -640,7 +669,8 @@ async def upload_files(
     }
     
     try:
-        msg = rag_engine.ingest_text(
+        msg = await asyncio.to_thread(
+            rag_engine.ingest_text,
             documents=documents,
             collection=target_collection,
             metadata=metadata
@@ -753,7 +783,8 @@ async def upload_zip(
     }
     
     try:
-        msg = rag_engine.ingest_text(
+        msg = await asyncio.to_thread(
+            rag_engine.ingest_text,
             documents=documents,
             collection=target_collection,
             metadata=metadata

@@ -1,0 +1,28 @@
+{
+  "title": "Sentencing Act 2002",
+  "act_id": "sentencing_act_2002",
+  "sections": [
+    {
+      "number": "s 7",
+      "title": "Purposes of sentencing",
+      "content": "The purposes of sentencing are: to hold the offender accountable, to denounce the conduct, to deter the offender or others, to protect the community, to assist rehabilitation."
+    },
+    {
+      "number": "s 8",
+      "title": "Principles of sentencing",
+      "content": "The court must take into account: the gravity of the offence, the degree of culpability, the personal circumstances of the offender, and the extent of harm caused."
+    },
+    {
+      "number": "s 9",
+      "title": "Aggravating factors",
+      "content": "Aggravating factors include: vulnerability of victim, breach of trust, premeditation, group offending, hate motivation."
+    },
+    {
+      "number": "s 10",
+      "title": "Mitigating factors",
+      "content": "Mitigating factors include: remorse, guilty plea, youth, previous good character, cooperation with authorities."
+    }
+  ],
+  "parsed_date": "2026-03-03T10:06:15.417773",
+  "source": "Manual compilation"
+}

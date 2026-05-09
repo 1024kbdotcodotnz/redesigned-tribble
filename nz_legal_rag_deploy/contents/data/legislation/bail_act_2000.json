@@ -1,0 +1,28 @@
+{
+  "title": "Bail Act 2000",
+  "act_id": "bail_act_2000",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Purpose",
+      "content": "The purpose of this Act is to provide a framework for deciding whether persons charged with offences should be remanded in custody or released on bail, with or without conditions."
+    },
+    {
+      "number": "s 7",
+      "title": "General rule about bail",
+      "content": "An arrested person has a right to be released on bail pending trial unless the court is satisfied that one or more of the grounds for remand in custody in section 8 are made out."
+    },
+    {
+      "number": "s 8",
+      "title": "Grounds for remand in custody",
+      "content": "The grounds for remand in custody are: (a) the defendant will fail to appear; (b) the defendant will interfere with witnesses or evidence; (c) the defendant will offend while on bail; (d) detention is necessary for protection of the defendant or another person."
+    },
+    {
+      "number": "s 30",
+      "title": "Conditions of bail",
+      "content": "The court may impose conditions on bail that are necessary to address any of the grounds for remand in custody."
+    }
+  ],
+  "parsed_date": "2026-03-03T10:06:15.417575",
+  "source": "Manual compilation"
+}

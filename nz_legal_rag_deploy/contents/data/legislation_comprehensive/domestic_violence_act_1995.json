@@ -1,0 +1,28 @@
+{
+  "title": "Domestic Violence Act 1995",
+  "act_id": "domestic_violence_act_1995",
+  "sections": [
+    {
+      "number": "s 3",
+      "title": "Meaning of domestic violence",
+      "content": "Domestic violence means violence (physical, sexual, or psychological) against a person by any other person with whom they are or have been in a domestic relationship."
+    },
+    {
+      "number": "s 13",
+      "title": "Protection orders",
+      "content": "A person who is or has been in a domestic relationship with the respondent may apply for a protection order. The order may include non-contact conditions, non-molestation conditions, and conditions relating to occupation of property."
+    },
+    {
+      "number": "s 19",
+      "title": "Temporary protection orders",
+      "content": "A court may make a temporary protection order without notice to the respondent if satisfied that the order is necessary for the protection of the applicant."
+    },
+    {
+      "number": "s 49",
+      "title": "Breach of protection order",
+      "content": "Every person commits an offence against this Act who, knowing that a protection order is in force against them, contravenes or fails to comply with any condition of the order."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.003286",
+  "source": "Comprehensive compilation"
+}

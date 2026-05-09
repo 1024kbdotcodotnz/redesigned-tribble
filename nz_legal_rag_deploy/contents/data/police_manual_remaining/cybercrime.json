@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Cybercrime Investigation",
+  "chapter": "C",
+  "section": "Digital Crime and Online Offending",
+  "category": "Cybercrime",
+  "content": "\nPOLICE MANUAL - CYBERCRIME INVESTIGATION\n\nTypes of Cybercrime:\n- Hacking/unauthorized access\n- Malware distribution\n- Online fraud\n- Identity theft\n- Online child exploitation\n- Cyberstalking/harassment\n- Denial of service attacks\n- Ransomware\n- Cryptocurrency crimes\n\nJurisdiction:\n- International element common\n- Mutual Legal Assistance Treaties (MLAT)\n- International Police cooperation (INTERPOL)\n- Time zone challenges\n- Evidence preservation across borders\n\nReporting:\n- NetSafe for minor complaints\n- Police for criminal matters\n- CERT NZ for cybersecurity incidents\n- Financial crimes to Financial Crime Unit\n\nDigital Evidence Preservation:\n- Volatile data (RAM)\n- Servers (cloud and physical)\n- Internet records (ISPs)\n- Social media (platforms)\n- Email providers\n- Gaming platforms\n\nSearch Powers:\n- Search warrants for devices\n- Production orders for records\n- Surveillance Device Warrants (if applicable)\n- International cooperation\n\nForensic Examination:\n- Digital Forensic Unit\n- Write-blocking\n- Imaging drives\n- Deleted file recovery\n- Metadata analysis\n- Network traffic analysis\n- Cryptocurrency tracing\n\nVictim Evidence:\n- Screenshot preservation\n- URL preservation\n- Email headers\n- Banking records\n- Timeline documentation\n\nChallenges:\n- Encryption\n- Dark web\n- Cryptocurrency anonymity\n- Jurisdiction\n- Technical complexity\n- Rapidly evolving technology\n\nOffender Identification:\n- IP addresses\n- Email tracing\n- Device fingerprinting\n- Behavioral analysis\n- Financial trails\n- Undercover online operations\n\nRelated Legislation:\n- Crimes Act 1961 (computer crimes)\n- Search and Surveillance Act 2012\n- Harmful Digital Communications Act 2015\n- Films, Videos, and Publications Classification Act 1993\n",
+  "key_procedures": [
+    "Preserve digital evidence immediately",
+    "Engage Digital Forensic Unit",
+    "Identify jurisdiction issues",
+    "Obtain necessary warrants",
+    "Document victim evidence",
+    "Coordinate international cooperation"
+  ],
+  "created": "2026-03-03T10:45:46.191953",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

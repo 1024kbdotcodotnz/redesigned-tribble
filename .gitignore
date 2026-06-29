@@ -1,4 +1,4 @@
-: "# Python
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -40,6 +40,7 @@ aegis_export_samples/
 **/*.before_*
 *.corrupted.*
 *.patch
+*_previous.*
 
 # Superpowers workspace
 .superpowers/

@@ -37,6 +37,7 @@ fastmcp>=2.0.0
 # PDF export for analysis reports
 fpdf2>=2.7.0
 docx2pdf>=0.1.8
+pywin32>=306; platform_system=="Windows"
 
 langchain-ollama>=0.1.0
 

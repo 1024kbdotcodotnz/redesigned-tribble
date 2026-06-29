@@ -47,7 +47,8 @@ if [ ! -f ".env" ]; then
     
     cat > .env << EOF
 # NZ Legal RAG Configuration
-CHROMA_DB_PATH=./chroma_db
+CHROMA_DB_PATH=/workspace/chroma_db_fresh
+export CHROMA_PERSIST_DIR=/workspace/chroma_db_fresh
 TENANT_DATA_PATH=./tenant_data
 OLLAMA_HOST=http://localhost:11434
 EMBEDDING_MODEL=nomic-embed-text

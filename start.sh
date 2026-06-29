@@ -1,6 +1,8 @@
 #!/bin/bash
 # NZ Legal RAG Startup Script
 
+export OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-24576}
+
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$APP_DIR"
 
@@ -28,7 +30,7 @@ fi
 
 echo "✓ Ollama is running"
 echo "✓ Models available:"
-ollama list | grep -E "(mixtral|nomic-embed-text|mistral|llama3.1|deepseek-r1)"
+ollama list | grep -E "(mixtral|nomic-embed-text|mistral|llama3.1|deepseek-v3)"
 
 echo ""
 echo "Starting NZ Legal RAG..."

@@ -1,0 +1,780 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #232225;
+  --surface: #2b2a2e;
+  --surface-2: #312f34;
+  --surface-3: #1f1e21;
+
+  --text: #e3e3e3;
+  --text-muted: #a6a5a8;
+  --text-soft: #8e8d90;
+  --text-faint: #727174;
+  --text-inverse: #ffffff;
+
+  --gold: #c5a880;
+  --gold-soft: rgba(197, 168, 128, 0.12);
+  --gold-ring: rgba(197, 168, 128, 0.18);
+
+  --sage-bg: #cce3cc;
+  --sage-label: #4a614a;
+  --sage-text: #1e331e;
+
+  --button: #343d52;
+  --button-border: #414b63;
+  --button-hover: #3d475f;
+
+  --line: #3a393d;
+  --line-soft: rgba(255,255,255,0.06);
+
+  --success-bg: #203427;
+  --success-border: #355240;
+  --success-text: #cfe8d4;
+
+  --warning-bg: #3b3220;
+  --warning-border: #655634;
+  --warning-text: #ead8aa;
+
+  --error-bg: #3b2528;
+  --error-border: #6b3b42;
+  --error-text: #f0c6cb;
+
+  --info-bg: #222f3c;
+  --info-border: #384e64;
+  --info-text: #c8dbef;
+
+  /* NEW: Button state colors */
+  --btn-red: #dc3545;
+  --btn-red-hover: #c82333;
+  --btn-red-border: #bd2130;
+  --btn-green: #28a745;
+  --btn-green-hover: #218838;
+  --btn-green-border: #1e7e34;
+  --btn-grey: #666666;
+  --btn-grey-text: #cccccc;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.24);
+  --shadow-md: 0 18px 40px rgba(0,0,0,0.34);
+
+  --transition: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html, body, [class*="css"] {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  color: var(--text);
+}
+
+body {
+  background: var(--bg);
+}
+
+.stApp {
+  background:
+    radial-gradient(circle at top center, rgba(255,255,255,0.025), transparent 30%),
+    linear-gradient(180deg, #252427 0%, #232225 100%) !important;
+  color: var(--text) !important;
+}
+
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] {
+  display: none !important;
+}
+
+.block-container {
+  max-width: 720px !important;
+  padding-top: 1.75rem !important;
+  padding-bottom: 1.75rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text) !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.08 !important;
+  margin: 0 !important;
+}
+
+p, div, span, label, li {
+  color: inherit;
+}
+
+.caption,
+.stCaption,
+[data-testid="stCaptionContainer"],
+small {
+  color: var(--text-soft) !important;
+}
+
+.login-container,
+.login-shell {
+  width: 100% !important;
+  max-width: 520px !important;
+  margin: 7vh auto 0 !important;
+  text-align: center !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.logo-container,
+.login-logo {
+  margin-bottom: 24px !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.legal-scales,
+.logo-container svg,
+.login-logo svg {
+  width: 70px !important;
+  height: 70px !important;
+  opacity: 0.85 !important;
+}
+
+.brand-title,
+.login-title,
+.page-title {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: var(--gold) !important;
+  letter-spacing: -0.3px !important;
+  line-height: 1.2 !important;
+  margin: 0 0 8px !important;
+  text-align: center !important;
+}
+
+.brand-subtitle,
+.login-byline {
+  font-size: 14px !important;
+  color: var(--text-soft) !important;
+  margin: 0 0 32px !important;
+  text-align: center !important;
+  line-height: 1.5 !important;
+}
+
+.form-instructions,
+.login-help {
+  font-size: 12px !important;
+  color: var(--text-faint) !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  margin-top: 20px !important;
+}
+
+div[data-testid="stVerticalBlock"] > div:has(.stTextInput),
+div[data-testid="stVerticalBlock"] > div:has(.stButton),
+div[data-testid="stVerticalBlock"] > div:has(.stTextArea),
+div[data-testid="stVerticalBlock"] > div:has(.stNumberInput) {
+  margin-bottom: 0 !important;
+}
+
+.stTextInput,
+.stTextArea,
+.stNumberInput,
+.stSelectbox {
+  margin-bottom: 12px !important;
+}
+
+.stTextInput label,
+.stTextArea label,
+.stNumberInput label,
+.stSelectbox label,
+.stCheckbox label,
+.stRadio label {
+  color: var(--text-soft) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  margin-bottom: 6px !important;
+}
+
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stNumberInput"] input,
+.stTextInput input,
+.stTextArea textarea,
+input[type="text"],
+input[type="email"] {
+  width: 100% !important;
+  padding: 14px 16px !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-inverse) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  min-height: 48px !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s !important;
+}
+
+[data-testid="stTextInput"] input::placeholder,
+[data-testid="stTextArea"] textarea::placeholder,
+[data-testid="stNumberInput"] input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: #8b8a8e !important;
+  opacity: 1 !important;
+}
+
+[data-testid="stTextInput"] input:not([disabled]):not([readonly]):focus,
+[data-testid="stTextArea"] textarea:not([disabled]):not([readonly]):focus,
+[data-testid="stNumberInput"] input:not([disabled]):not([readonly]):focus,
+.stTextInput input:not([disabled]):not([readonly]):focus,
+.stTextArea textarea:not([disabled]):not([readonly]):focus,
+input:not([readonly]):focus,
+textarea:not([readonly]):focus {
+  outline: none !important;
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 2px rgba(197, 168, 128, 0.15) !important;
+}
+
+[data-testid="stTextInput"] input[readonly],
+[data-testid="stNumberInput"] input[readonly],
+input[readonly] {
+  color: var(--text-muted) !important;
+  cursor: not-allowed !important;
+}
+
+.code-display-box {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 14px 20px !important;
+  background-color: var(--sage-bg) !important;
+  border-radius: var(--radius-sm) !important;
+  margin: 0 0 12px !important;
+}
+
+.code-label {
+  color: var(--sage-label) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.code-value {
+  color: var(--sage-text) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+}
+
+/* ─── NEW: File Uploader "Upload" button — RED ─────────────────────────── */
+/* Targets the internal browse/upload button inside the file uploader widget */
+[data-testid="stFileUploader"] button[kind="secondary"] {
+  background-color: var(--btn-red) !important;
+  border-color: var(--btn-red) !important;
+  color: #ffffff !important;
+}
+[data-testid="stFileUploader"] button[kind="secondary"]:hover {
+  background-color: var(--btn-red-hover) !important;
+  border-color: var(--btn-red-border) !important;
+}
+[data-testid="stFileUploader"] button[kind="secondary"] * {
+  color: #ffffff !important;
+}
+
+/* ─── NEW: Ingest / Action buttons — GREEN when active ───────────────────── */
+button[kind="primary"]:not(:disabled) {
+  background-color: var(--btn-green) !important;
+  border-color: var(--btn-green) !important;
+  color: #ffffff !important;
+}
+button[kind="primary"]:not(:disabled):hover {
+  background-color: var(--btn-green-hover) !important;
+  border-color: var(--btn-green-border) !important;
+}
+button[kind="primary"]:not(:disabled) * {
+  color: #ffffff !important;
+}
+
+/* ─── NEW: Ingest / Action buttons — GREY when disabled ─────────────────── */
+button[kind="primary"]:disabled {
+  background-color: var(--btn-grey) !important;
+  border-color: var(--btn-grey) !important;
+  color: var(--btn-grey-text) !important;
+  opacity: 0.8 !important;
+  cursor: not-allowed !important;
+}
+button[kind="primary"]:disabled * {
+  color: var(--btn-grey-text) !important;
+}
+
+/* ─── Base button styling (fallback) ────────────────────────────────────── */
+div[data-testid="stButton"] > button,
+.stButton > button,
+.stDownloadButton > button,
+button[kind="primary"],
+.submit-btn {
+  width: 100% !important;
+  padding: 14px !important;
+  min-height: 48px !important;
+  background-color: var(--button) !important;
+  border: 1px solid var(--button-border) !important;
+  border-radius: var(--radius-sm) !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s, border-color 0.2s, transform var(--transition) !important;
+  margin-top: 4px !important;
+  box-shadow: none !important;
+}
+
+div[data-testid="stButton"] > button *,
+.stButton > button *,
+.stDownloadButton > button *,
+button[kind="primary"] *,
+.submit-btn * {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  opacity: 1 !important;
+}
+
+div[data-testid="stButton"] > button:hover,
+.stButton > button:hover,
+.stDownloadButton > button:hover,
+button[kind="primary"]:hover,
+.submit-btn:hover {
+  background-color: var(--button-hover) !important;
+  border-color: #4a5570 !important;
+  transform: translateY(-1px);
+}
+
+div[data-testid="stButton"] > button:focus-visible,
+.stButton > button:focus-visible,
+.stDownloadButton > button:focus-visible,
+button[kind="primary"]:focus-visible,
+.submit-btn:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(197, 168, 128, 0.18) !important;
+}
+
+div[data-testid="stButton"] > button:disabled,
+.stButton > button:disabled,
+.stDownloadButton > button:disabled,
+button[kind="primary"]:disabled {
+  background: #4a4a4d !important;
+  border-color: #56565a !important;
+  color: #d0d0d0 !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+div[data-testid="stButton"] > button:disabled *,
+.stButton > button:disabled *,
+.stDownloadButton > button:disabled *,
+button[kind="primary"]:disabled * {
+  color: #d0d0d0 !important;
+}
+
+button[kind="secondary"] {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+  color: var(--text) !important;
+}
+
+button[kind="secondary"] * {
+  color: var(--text) !important;
+}
+
+button[kind="secondary"]:hover {
+  background: rgba(255,255,255,0.03) !important;
+  border-color: var(--gold) !important;
+}
+
+.stAlert {
+  border-radius: 8px !important;
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
+.stSuccess {
+  background: var(--success-bg) !important;
+  border: 1px solid var(--success-border) !important;
+  color: var(--success-text) !important;
+}
+.stSuccess * {
+  color: var(--success-text) !important;
+}
+
+.stWarning {
+  background: var(--warning-bg) !important;
+  border: 1px solid var(--warning-border) !important;
+  color: var(--warning-text) !important;
+}
+.stWarning * {
+  color: var(--warning-text) !important;
+}
+
+.stError {
+  background: var(--error-bg) !important;
+  border: 1px solid var(--error-border) !important;
+  color: var(--error-text) !important;
+}
+.stError * {
+  color: var(--error-text) !important;
+}
+
+.stInfo {
+  background: var(--info-bg) !important;
+  border: 1px solid var(--info-border) !important;
+  color: var(--info-text) !important;
+}
+.stInfo * {
+  color: var(--info-text) !important;
+}
+
+.hero-panel,
+div[data-testid="stForm"],
+[data-testid="metric-container"],
+.streamlit-expanderHeader,
+[data-testid="stJson"] {
+  background: var(--surface-3) !important;
+  border: 1px solid var(--line-soft) !important;
+  color: var(--text) !important;
+}
+
+.hero-panel,
+div[data-testid="stForm"],
+[data-testid="metric-container"] {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.hero-panel {
+  padding: 18px !important;
+  margin-bottom: 1rem !important;
+}
+
+.hero-panel p,
+[data-testid="metric-container"] label,
+[data-testid="metric-container"] [data-testid="stMetricLabel"] {
+  color: var(--text-soft) !important;
+}
+
+[data-testid="metric-container"] {
+  padding: 1rem !important;
+}
+
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+  color: var(--text) !important;
+  font-weight: 700 !important;
+}
+
+[data-testid="stFileUploader"] section {
+  background: var(--surface-3) !important;
+  border: 1px dashed #46454a !important;
+  border-radius: var(--radius-md) !important;
+}
+
+[data-testid="stFileUploader"] * {
+  color: var(--text-soft) !important;
+}
+
+.stCodeBlock,
+pre,
+code,
+[data-testid="stJson"] {
+  border-radius: var(--radius-md) !important;
+}
+
+pre,
+code {
+  color: #f2f2f2 !important;
+}
+
+a {
+  color: var(--gold) !important;
+  text-decoration: none !important;
+}
+
+a:hover {
+  color: #dcc09a !important;
+  text-decoration: underline !important;
+}
+
+[data-testid="stSidebar"] {
+  background: #1d1c1f !important;
+  border-right: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+[data-testid="stSidebar"] * {
+  color: var(--text) !important;
+}
+
+/* ─── NEW: KC Opinion cards ─────────────────────────────────────────────── */
+.kc-opinion {
+  background: var(--surface-3) !important;
+  border: 1px solid var(--line-soft) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 16px !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  color: var(--text-soft) !important;
+  min-height: 120px;
+}
+
+/* ─── NEW: Print / DOCX download button styling ─────────────────────────── */
+[data-testid="stDownloadButton"] > button {
+  background-color: var(--button) !important;
+  border-color: var(--button-border) !important;
+  color: #ffffff !important;
+}
+[data-testid="stDownloadButton"] > button:hover {
+  background-color: var(--button-hover) !important;
+  border-color: var(--gold) !important;
+}
+
+/* Primary export buttons (DOCX / HTML) */
+[data-testid="stDownloadButton"] > button[kind="primary"]:not(:disabled) {
+  background-color: var(--btn-green) !important;
+  border-color: var(--btn-green-border) !important;
+}
+[data-testid="stDownloadButton"] > button[kind="primary"]:not(:disabled):hover {
+  background-color: var(--btn-green-hover) !important;
+  border-color: var(--btn-green-border) !important;
+}
+
+@media (max-width: 640px) {
+  .block-container {
+    padding-left: 0.9rem !important;
+    padding-right: 0.9rem !important;
+  }
+
+  .login-container,
+  .login-shell {
+    margin-top: 4vh !important;
+  }
+
+  .brand-title,
+  .login-title,
+  .page-title {
+    font-size: 22px !important;
+  }
+
+  .code-display-box {
+    padding: 13px 16px !important;
+  }
+
+  .code-value {
+    font-size: 18px !important;
+  }
+}
+
+
+.aegis-kicker {
+    font-size: 1.0rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.01em !important;
+    text-transform: none !important;
+    margin-bottom: 0.35rem !important;
+}
+
+
+.aegis-title {
+    font-size: 3.4rem !important;
+    font-weight: 800 !important;
+    line-height: 1.02 !important;
+    letter-spacing: -0.04em !important;
+    margin: 0 0 0.8rem 0 !important;
+}
+
+.aegis-loader-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.aegis-loader-card {
+  width: min(100%, 520px);
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(20, 24, 38, 0.96), rgba(13, 16, 28, 0.98));
+  border: 1px solid rgba(132, 145, 190, 0.22);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.aegis-loader-stage {
+  color: #f5f7ff;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.aegis-loader-caption {
+  color: rgba(229, 233, 255, 0.82);
+  font-size: 0.92rem;
+  margin-top: 0.35rem;
+}
+
+.aegis-loader-scene {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 220px;
+}
+
+.aegis-loader-svg {
+  width: 240px;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.aegis-loader-stickman,
+.aegis-loader-shadow,
+.aegis-loader-dots circle {
+  transform-origin: center;
+}
+
+.aegis-loader-stickman {
+  animation: aegis-bob 1.2s ease-in-out infinite;
+}
+
+.aegis-loader-shadow ellipse {
+  fill: rgba(80, 98, 150, 0.28);
+  animation: aegis-shadow 1.2s ease-in-out infinite;
+}
+
+.aegis-loader-stickman .head,
+.aegis-loader-stickman .body,
+.aegis-loader-stickman .arm,
+.aegis-loader-stickman .leg,
+.aegis-loader-stickman .briefcase rect,
+.aegis-loader-stickman .briefcase line {
+  stroke: #dce6ff;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.aegis-loader-stickman .briefcase rect {
+  fill: rgba(96, 132, 255, 0.16);
+  stroke: #8fb0ff;
+}
+
+.aegis-loader-stickman .arm-left {
+  animation: aegis-arm-left 0.9s ease-in-out infinite alternate;
+  transform-origin: 120px 72px;
+}
+
+.aegis-loader-stickman .arm-right {
+  animation: aegis-arm-right 0.9s ease-in-out infinite alternate;
+  transform-origin: 120px 72px;
+}
+
+.aegis-loader-stickman .leg-left {
+  animation: aegis-leg-left 0.8s ease-in-out infinite alternate;
+  transform-origin: 120px 102px;
+}
+
+.aegis-loader-stickman .leg-right {
+  animation: aegis-leg-right 0.8s ease-in-out infinite alternate;
+  transform-origin: 120px 102px;
+}
+
+.aegis-loader-dots circle {
+  fill: #8fb0ff;
+}
+
+.aegis-loader-dots circle:nth-child(1) {
+  animation: aegis-dot 1.2s 0s infinite;
+}
+.aegis-loader-dots circle:nth-child(2) {
+  animation: aegis-dot 1.2s 0.2s infinite;
+}
+.aegis-loader-dots circle:nth-child(3) {
+  animation: aegis-dot 1.2s 0.4s infinite;
+}
+
+@keyframes aegis-bob {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes aegis-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.28; }
+  50% { transform: scaleX(0.88); opacity: 0.18; }
+}
+
+@keyframes aegis-arm-left {
+  from { transform: rotate(10deg); }
+  to { transform: rotate(-14deg); }
+}
+
+@keyframes aegis-arm-right {
+  from { transform: rotate(-8deg); }
+  to { transform: rotate(16deg); }
+}
+
+@keyframes aegis-leg-left {
+  from { transform: rotate(8deg); }
+  to { transform: rotate(-10deg); }
+}
+
+@keyframes aegis-leg-right {
+  from { transform: rotate(-6deg); }
+  to { transform: rotate(12deg); }
+}
+
+@keyframes aegis-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-8px); }
+}
+
+.aegis-prose {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+/* ─── Admin Panel Styling ─────────────────────────────────────────────────── */
+
+.admin-stat-row {
+  background: var(--surface-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin: 8px 0;
+  font-size: 0.95em;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+}
+
+.admin-stat-row:hover {
+  border-color: var(--gold);
+}
+
+.admin-stat-row strong {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* Dataframe styling for admin user table */
+[data-testid="stDataFrame"] {
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--line-soft) !important;
+}
+
+[data-testid="stDataFrame"] th {
+  background: var(--surface-3) !important;
+  color: var(--gold) !important;
+  font-weight: 600 !important;
+}
+
+[data-testid="stDataFrame"] td {
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--line-soft) !important;
+}
+
+[data-testid="stDataFrame"] tr:hover td {
+  background: var(--surface-2) !important;
+}

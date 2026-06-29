@@ -28,8 +28,8 @@ from core.rag_engine import NZLegalRAG, SearchResult, LegalAnalysis
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-DB_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
+DB_PATH = os.getenv("CHROMA_DB_PATH", "/workspace/chroma_db_fresh")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text:latest")
 LLM_MODEL = os.getenv("LLM_MODEL", "mixtral:latest")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 MCP_TRANSPORT = os.getenv("MCP_TRANSPORT", "stdio")  # stdio | sse | streamable-http

@@ -21,7 +21,8 @@ Type=simple
 User=root
 WorkingDirectory=$APP_DIR
 Environment=OLLAMA_URL=http://localhost:11434
-Environment=CHROMA_DB_PATH=./chroma_db
+Environment=CHROMA_DB_PATH=/workspace/chroma_db_fresh
+export CHROMA_PERSIST_DIR=/workspace/chroma_db_fresh
 Environment=TENANT_DATA_PATH=./tenant_data
 Environment=API_HOST=0.0.0.0
 Environment=API_PORT=8000
@@ -65,7 +66,8 @@ Type=simple
 User=root
 WorkingDirectory=$APP_DIR
 Environment=OLLAMA_URL=http://localhost:11434
-Environment=CHROMA_DB_PATH=./chroma_db
+Environment=CHROMA_DB_PATH=/workspace/chroma_db_fresh
+export CHROMA_PERSIST_DIR=/workspace/chroma_db_fresh
 Environment=MCP_TRANSPORT=streamable-http
 Environment=MCP_HOST=0.0.0.0
 Environment=MCP_PORT=8080

@@ -86,6 +86,13 @@ cat > /etc/systemd/system/ollama.service.d/gpu.conf << 'EOF'
 [Service]
 Environment="OLLAMA_GPU_LAYERS=999"
 Environment="CUDA_VISIBLE_DEVICES=0"
+Environment="OLLAMA_NUM_PARALLEL=1"
+Environment="OLLAMA_MAX_LOADED_MODELS=1"
+Environment="OLLAMA_KEEP_ALIVE=-1"
+Environment="OLLAMA_FLASH_ATTENTION=1"
+Environment="OLLAMA_KV_CACHE_TYPE=q4_0"
+Environment="OLLAMA_CONTEXT_LENGTH=16384"
+Environment="OLLAMA_LOAD_TIMEOUT=10m"
 Environment="OLLAMA_MODELS=/workspace/ollama_models"
 EOF
 echo "✓ GPU configuration saved"
@@ -118,12 +125,13 @@ echo "This will take 10-15 minutes (~30GB)"
 echo ""
 
 # Check if models already exist
-if ollama list | grep -q "mixtral"; then
-    echo "✓ Mixtral already downloaded"
+LLM_MODEL="${LLM_MODEL:-qwen2.5:14b}"
+if ollama list | grep -q "$LLM_MODEL"; then
+    echo "✓ $LLM_MODEL already downloaded"
 else
-    echo "Downloading mixtral (26GB)..."
-    ollama pull mixtral:latest
-    echo "✓ Mixtral downloaded"
+    echo "Downloading $LLM_MODEL..."
+    ollama pull "$LLM_MODEL"
+    echo "✓ $LLM_MODEL downloaded"
 fi
 
 if ollama list | grep -q "nomic-embed-text"; then
@@ -214,10 +222,11 @@ echo "[7/10] Creating Configuration..."
 echo "----------------------------------------"
 
 cat > /workspace/nz_legal_rag/.env << 'EOF'
-CHROMA_DB_PATH=./chroma_db
+CHROMA_DB_PATH=/workspace/chroma_db_fresh
+export CHROMA_PERSIST_DIR=/workspace/chroma_db_fresh
 TENANT_DATA_PATH=./tenant_data
 OLLAMA_HOST=http://localhost:11434
-EMBEDDING_MODEL=nomic-embed-text
+EMBEDDING_MODEL=nomic-embed-text:latest
 LLM_MODEL=mixtral:latest
 API_HOST=0.0.0.0
 API_PORT=8000
@@ -263,7 +272,7 @@ echo "[2/3] Checking models..."
 ollama list | grep -E "(mixtral|nomic-embed)" || echo "⚠️  Models not found!"
 
 # Check for database
-if [ ! -d "chroma_db" ] || [ -z "$(ls -A chroma_db 2>/dev/null)" ]; then
+if [ ! -d "/workspace/chroma_db_fresh" ] || [ -z "$(ls -A chroma_db 2>/dev/null)" ]; then
     echo "⚠️  WARNING: No database found in chroma_db/"
     echo "   Upload your database with:"
     echo "   ./upload_to_runpod.sh <ip>:<port>"

@@ -140,11 +140,11 @@ echo -e "${YELLOW}[5/5] Uploading database...${NC}"
 echo "This includes: chroma_db/, tenant_data/"
 echo ""
 
-if [ -d "chroma_db" ] && [ "$(ls -A chroma_db 2>/dev/null)" ]; then
+if [ -d "/workspace/chroma_db_fresh" ] && [ "$(ls -A chroma_db 2>/dev/null)" ]; then
     echo "Uploading chroma_db (~451MB)..."
     rsync -avz --progress -L \
         -e "ssh -p $RUNPOD_PORT -i $SSH_KEY -o StrictHostKeyChecking=no" \
-        ./chroma_db/ \
+        /workspace/chroma_db_fresh/ \
         "$RUNPOD_USER@$RUNPOD_IP:/workspace/nz_legal_rag/chroma_db/"
     echo -e "${GREEN}✓ Database uploaded${NC}"
 else

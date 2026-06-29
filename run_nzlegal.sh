@@ -1,3 +1,4 @@
+export OLLAMA_CONTEXT_LENGTH=4096
 #!/bin/bash
 # NZ Legal RAG - Run Script (using existing environment)
 
@@ -30,7 +31,8 @@ mkdir -p chroma_db tenant_data secure_data logs
 if [ ! -f ".env" ]; then
     echo "Creating .env file..."
     cat > .env << 'EOF'
-CHROMA_DB_PATH=./chroma_db
+CHROMA_DB_PATH=/workspace/chroma_db_fresh
+export CHROMA_PERSIST_DIR=/workspace/chroma_db_fresh
 TENANT_DATA_PATH=./tenant_data
 OLLAMA_HOST=http://localhost:11434
 EMBEDDING_MODEL=nomic-embed-text

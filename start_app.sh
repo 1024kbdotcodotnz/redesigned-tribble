@@ -1,5 +1,7 @@
 #!/bin/bash
 # NZ Legal RAG Demo Startup Script
+
+export OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-24576}
 # This script starts the API server and the Streamlit web UI.
 
 set -e
@@ -30,7 +32,7 @@ if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
 fi
 
 echo "✓ Ollama is running"
-ollama list | grep -E "(nomic-embed-text|deepseek-r1)" || true
+ollama list | grep -E "(nomic-embed-text|deepseek-v3)" || true
 
 # Prevent Streamlit first-run email prompt
 mkdir -p ~/.streamlit
@@ -41,7 +43,7 @@ fi
 export STREAMLIT_BROWSER_GATHERUSAGESTATS=false
 
 # Verify chroma_db symlink is valid
-if [ ! -d "chroma_db" ]; then
+if [ ! -d "/workspace/chroma_db_fresh" ]; then
     echo "❌ chroma_db directory missing or broken symlink. Please fix before starting."
     exit 1
 fi

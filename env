@@ -1,0 +1,11 @@
+# AEGIS environment configuration
+ADMIN_API_KEY=mKO2vBEoTI09oOA5Ic1XwJJOHRZDbRYjuviWGiaAl5s
+
+# LLM / embedding settings
+LLM_MODEL=qwen2.5:14b
+LLM_NUM_CTX=16384
+OLLAMA_CONTEXT_LENGTH=16384
+EMBEDDING_MODEL=nomic-embed-text:latest
+
+# Chroma database
+CHROMA_DB_PATH=/workspace/chroma_db_fresh

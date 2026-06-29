@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: nzlegal-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./data:/data:ro
+    restart: always
+    networks:
+      - nzlegal-network
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_KEEP_ALIVE=24h
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: nzlegal-api
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - CHROMA_DB_PATH=/app/chroma_db
+      - TENANT_DATA_PATH=/app/tenant_data
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-change-me-in-production}
+      - LLM_MODEL=${LLM_MODEL:-llama3.2:3b}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text:latest}
+    volumes:
+      - ./data:/app/data:ro
+      - /workspace/chroma_db_fresh:/app/chroma_db
+      - ./tenant_data:/app/tenant_data
+      - ./secure_data:/app/secure_data
+      - ./logs:/app/logs
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: always
+    networks:
+      - nzlegal-network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: nzlegal-web
+    ports:
+      - "80:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: always
+    networks:
+      - nzlegal-network
+
+volumes:
+  ollama_data:
+
+networks:
+  nzlegal-network:
+    driver: bridge

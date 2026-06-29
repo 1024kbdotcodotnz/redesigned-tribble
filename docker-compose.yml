@@ -19,6 +19,8 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    environment:
+      - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-24576}
     # Uncomment below for CPU-only deployment
     # environment:
     #   - OLLAMA_CPU_ONLY=1
@@ -40,9 +42,11 @@ services:
       - ADMIN_API_KEY=${ADMIN_API_KEY:-change-me-in-production}
       - LLM_MODEL=${LLM_MODEL:-deepseek-r1:14b}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+      - LLM_NUM_CTX=${LLM_NUM_CTX:-24576}
+      - LLM_NUM_PREDICT=${LLM_NUM_PREDICT:-4096}
     volumes:
       - ./data:/app/data:ro
-      - ./chroma_db:/app/chroma_db
+      - /workspace/chroma_db_fresh:/app/chroma_db
       - ./tenant_data:/app/tenant_data
       - ./secure_data:/app/secure_data
       - ./logs:/app/logs
@@ -85,8 +89,10 @@ services:
       - MCP_PATH=/mcp
       - LLM_MODEL=${LLM_MODEL:-deepseek-r1:14b}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+      - LLM_NUM_CTX=${LLM_NUM_CTX:-24576}
+      - LLM_NUM_PREDICT=${LLM_NUM_PREDICT:-4096}
     volumes:
-      - ./chroma_db:/app/chroma_db
+      - /workspace/chroma_db_fresh:/app/chroma_db
       - ./tenant_data:/app/tenant_data
     depends_on:
       - ollama

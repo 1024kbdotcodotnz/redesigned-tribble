@@ -40,7 +40,13 @@ cat > /etc/systemd/system/ollama.service.d/gpu.conf << 'EOF'
 [Service]
 Environment="OLLAMA_GPU_LAYERS=999"
 Environment="CUDA_VISIBLE_DEVICES=0"
-Environment="OLLAMA_NUM_PARALLEL=4"
+Environment="OLLAMA_NUM_PARALLEL=1"
+Environment="OLLAMA_MAX_LOADED_MODELS=1"
+Environment="OLLAMA_KEEP_ALIVE=-1"
+Environment="OLLAMA_FLASH_ATTENTION=1"
+Environment="OLLAMA_KV_CACHE_TYPE=q4_0"
+Environment="OLLAMA_CONTEXT_LENGTH=16384"
+Environment="OLLAMA_LOAD_TIMEOUT=10m"
 Environment="OLLAMA_MODELS=/workspace/ollama_models"
 EOF
 
@@ -92,11 +98,30 @@ source venv/bin/activate
 echo "Starting NZ Legal Advisor..."
 echo "═══════════════════════════════════════"
 
+# Configure Ollama for full GPU offload
+export OLLAMA_MODELS=/workspace/ollama_models
+export OLLAMA_GPU_LAYERS=999
+export OLLAMA_NUM_PARALLEL=1
+export OLLAMA_MAX_LOADED_MODELS=1
+export OLLAMA_KEEP_ALIVE=-1
+export OLLAMA_FLASH_ATTENTION=1
+export OLLAMA_KV_CACHE_TYPE=q8_0
+export OLLAMA_CONTEXT_LENGTH=16384
+export OLLAMA_LOAD_TIMEOUT=10m
+export CUDA_VISIBLE_DEVICES=0
+unset OLLAMA_VULKAN 2>/dev/null || true
+
 # Start Ollama in background
 if ! pgrep -x "ollama" > /dev/null; then
     echo "Starting Ollama..."
-    ollama serve &
+    ollama serve > logs/ollama.log 2>&1 &
     sleep 5
+fi
+
+# Ensure the LLM is available
+LLM_MODEL="${LLM_MODEL:-qwen2.5:14b}"
+if ! ollama list | grep -q "$LLM_MODEL"; then
+    ollama pull "$LLM_MODEL"
 fi
 
 # Check if API server exists
@@ -105,11 +130,11 @@ if [ -f "api/server.py" ]; then
     python -m api.server &
     API_PID=$!
     sleep 5
-    
+
     echo "Starting Web Interface on port 8501..."
     streamlit run web/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 &
     WEB_PID=$!
-    
+
     echo ""
     echo "═══════════════════════════════════════"
     echo "  NZ Legal Advisor is running!"
@@ -121,7 +146,7 @@ if [ -f "api/server.py" ]; then
     echo ""
     echo "  Press Ctrl+C to stop"
     echo "═══════════════════════════════════════"
-    
+
     wait
 else
     echo "⚠️  Application code not found."

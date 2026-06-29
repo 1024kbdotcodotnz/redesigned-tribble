@@ -1,0 +1,1029 @@
+#!/usr/bin/env python3
+"""
+AEGIS report export utilities.
+
+Generate Word (.docx) and HTML exports from the structured defence-analysis
+result dictionary produced by AgentSwarm.analyse_disclosure().
+"""
+
+import datetime
+import logging
+import os
+import re
+import tempfile
+from io import BytesIO
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Pt, Inches, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+try:
+    from fpdf import FPDF
+except ImportError:
+    FPDF = None  # type: ignore[misc,assignment]
+
+
+# Brand constants
+_BRAND_TEXT = "⚖️ AEGIS ⚖️"
+_BRAND_TAGLINE = "NZ's Legal Adviser · Secure Legal Research"
+_FOOTER_LEFT_TEXT = "Confidential Defence Analysis"
+_PDF_BRAND_TEXT = "AEGIS"
+_PDF_FOOTER_LEFT_TEXT = "Confidential Defence Analysis"
+_BRAND_DARK = (0x2C, 0x3E, 0x50)       # #2c3e50
+_BRAND_GOLD = (0xC5, 0xA8, 0x80)       # #c5a880
+_TEXT_DARK = (0x1D, 0x1D, 0x1F)        # #1d1d1f
+_TEXT_GREY = (0x66, 0x66, 0x66)        # #666666
+
+
+def _get_section(result: Dict[str, Any], key: str, title: str) -> str:
+    """Fetch a section from the result dict with sensible fallbacks."""
+    content = result.get(key, "")
+    if not content:
+        if key == "charge_and_legislative_framework":
+            content = result.get("charge_analysis", "")
+        elif key == "instructions_to_counsel_pre_trial":
+            content = (
+                result.get("pre_trial_instructions_for_lawyer", "")
+                or result.get("options_and_recommendations", "")
+            )
+        elif key == "conclusion":
+            content = result.get("conclusion_and_risk_assessment", "") or result.get("risk_assessment", "")
+    return content or f"No {title.lower()} available."
+
+
+def _clean_text_for_html(text: str) -> str:
+    """Escape HTML and preserve line breaks."""
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return text.replace("\n", "<br>")
+
+
+def _paragraphs_from_text(text: str):
+    """Split text into lines."""
+    return [p for p in text.split("\n")]
+
+
+# Main sections shared between DOCX and PDF builders.
+_MAIN_SECTIONS = [
+    ("executive_summary", "EXECUTIVE SUMMARY"),
+    ("charge_and_legislative_framework", "CHARGE AND LEGISLATIVE FRAMEWORK"),
+    ("summary_of_evidence", "SUMMARY OF EVIDENCE"),
+    ("assessment_of_prosecution_case", "ASSESSMENT OF PROSECUTION CASE"),
+    ("evidence_analysis", "EVIDENCE ANALYSIS"),
+    ("elements_of_the_offence", "ELEMENTS THE PROSECUTION MUST PROVE"),
+    ("defence_strategies", "DEFENCE STRATEGIES AND OPTIONS"),
+    ("cross_examination_priorities", "CROSS-EXAMINATION PRIORITIES"),
+    ("disclosure_and_forensic_gaps", "DISCLOSURE AND FORENSIC GAPS"),
+    ("instructions_to_counsel_pre_trial", "INSTRUCTIONS TO COUNSEL PRE-TRIAL"),
+    ("evidentiary_issues_to_raise", "EVIDENTIARY ISSUES TO RAISE"),
+    ("conclusion", "CONCLUSION"),
+]
+
+
+# Common Unicode punctuation → ASCII equivalents for PDF (Helvetica) compatibility.
+_PDF_UNICODE_REPLACEMENTS = {
+    "\u2018": "'",   # ‘
+    "\u2019": "'",   # ’
+    "\u201a": "'",   # ‚
+    "\u201b": "'",   # ‛
+    "\u201c": '"',   # “
+    "\u201d": '"',   # ”
+    "\u201e": '"',   # „
+    "\u201f": '"',   # ‟
+    "\u2013": "-",  # –
+    "\u2014": "-",  # —
+    "\u2026": "...", # …
+    "\u00a0": " ",  # non-breaking space
+    "\u00b7": "-",  # middle dot
+    "\u2022": "-",  # •
+    "\u25aa": "-",  # ▪
+    "\u25cf": "-",  # ●
+    "\u2696": " ",  # ⚖ scales (base)
+    "\ufe0f": "",   # emoji variation selector
+    "\u0101": "a",  # ā
+    "\u0113": "e",  # ē
+    "\u012b": "i",  # ī
+    "\u014d": "o",  # ō
+    "\u016b": "u",  # ū
+    "\u0100": "A",  # Ā
+    "\u0112": "E",  # Ē
+    "\u012a": "I",  # Ī
+    "\u014c": "O",  # Ō
+    "\u016a": "U",  # Ū
+}
+
+
+def _normalize_for_pdf(text: str) -> str:
+    """Replace Unicode characters that Helvetica cannot encode with ASCII equivalents."""
+    if not text:
+        return text
+    for char, replacement in _PDF_UNICODE_REPLACEMENTS.items():
+        text = text.replace(char, replacement)
+    encoded = text.encode("latin-1", errors="replace")
+    if b"?" in encoded and "?" not in text:
+        logging.getLogger(__name__).warning("PDF fallback replaced unsupported Unicode characters with '?'")
+    return encoded.decode("latin-1")
+
+
+def build_html(result: Dict[str, Any], elapsed: Optional[float] = None, server_time: Optional[float] = None) -> str:
+    """Build a printable HTML brief from an analysis result dict."""
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    def section_html(key: str, title: str) -> str:
+        content = _get_section(result, key, title)
+        return f"<h2>{title}</h2>\n<p>{_clean_text_for_html(content)}</p>\n"
+
+    disclaimer = result.get("disclaimer", "")
+    if not disclaimer:
+        disclaimer = "This analysis is generated by AI and does not constitute legal advice. Consult a qualified New Zealand lawyer."
+
+    meta_parts = [f"<strong>Date:</strong> {now_str}"]
+    if elapsed is not None:
+        meta_parts.insert(0, f"<strong>Total Time:</strong> {elapsed}s")
+    if server_time is not None:
+        meta_parts.insert(1, f"<strong>Server Time:</strong> {server_time}s")
+
+    body = "".join(section_html(k, t) for k, t in _MAIN_SECTIONS)
+
+    return f"""<!DOCTYPE html>
+<html><head><title>AEGIS Defence Analysis Brief</title>
+<style>
+body {{ font-family: Georgia, serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; }}
+h1 {{ color: #2c3e50; border-bottom: 2px solid #c5a880; padding-bottom: 10px; }}
+h2 {{ color: #34495e; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }}
+h3 {{ color: #555; }}
+.disclaimer {{ background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-top: 30px; }}
+.meta {{ color: #666; font-size: 0.9em; margin-bottom: 20px; }}
+</style></head>
+<body>
+<h1>AEGIS ⚖️ Defence Analysis Brief</h1>
+<div class="meta">{" | ".join(meta_parts)}</div>
+{body}
+<div class="disclaimer">
+<strong>Disclaimer:</strong> {_clean_text_for_html(disclaimer)}
+</div>
+</body></html>"""
+
+
+def _configure_docx_defaults(doc) -> None:
+    """Set Normal style, margins, and default font."""
+    # Normal style
+    style = doc.styles["Normal"]
+    font = style.font
+    font.name = "Calibri"
+    font.size = Pt(12)
+    font.color.rgb = RGBColor(0x1D, 0x1D, 0x1F)
+    style.paragraph_format.line_spacing = 1.5
+    style.paragraph_format.space_after = Pt(6)
+
+    # Section margins
+    section = doc.sections[0]
+    section.top_margin = Inches(1.0)
+    section.bottom_margin = Inches(1.0)
+    section.left_margin = Inches(1.0)
+    section.right_margin = Inches(1.0)
+
+
+def _set_paragraph_bottom_border(paragraph, color_hex: str = "2c3e50", size_pt: int = 6) -> None:
+    """Add a single bottom border to a paragraph, replacing any existing one."""
+    pPr = paragraph._element.get_or_add_pPr()
+    # Find or create the paragraph borders element
+    pBdr = pPr.find(qn('w:pBdr'))
+    if pBdr is None:
+        pBdr = OxmlElement('w:pBdr')
+        pPr.append(pBdr)
+    # Remove existing bottom border if present
+    for existing in pBdr.findall(qn('w:bottom')):
+        pBdr.remove(existing)
+    bottom = OxmlElement('w:bottom')
+    bottom.set(qn('w:val'), 'single')
+    bottom.set(qn('w:sz'), str(size_pt * 8))
+    bottom.set(qn('w:space'), '1')
+    bottom.set(qn('w:color'), color_hex)
+    pBdr.append(bottom)
+
+
+def _set_docx_header_footer(doc, prepared_date: str) -> None:
+    """Add the AEGIS brand header and three-column footer to every page.
+
+    The footer uses a single-row, three-cell table so long left text cannot
+    collide with the centre/right content. Columns contain the brand and
+    confidentiality notice, the prepared date, and a page-number field.
+    """
+    if not isinstance(prepared_date, str) or not prepared_date:
+        raise ValueError("prepared_date must be a non-empty string")
+
+    section = doc.sections[0]
+    section.different_first_page_header_footer = False
+
+    # --- Header ---
+    header = section.header
+    for p in list(header.paragraphs):
+        p._element.getparent().remove(p._element)
+    for table in list(header.tables):
+        table._element.getparent().remove(table._element)
+
+    header_para = header.add_paragraph()
+    header_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    header_para.paragraph_format.space_after = Pt(2)
+
+    run = header_para.add_run(_BRAND_TEXT)
+    run.bold = True
+    run.font.size = Pt(18)
+    run.font.color.rgb = RGBColor(*_BRAND_DARK)
+
+    tagline = header.add_paragraph()
+    tagline.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    tagline.paragraph_format.space_after = Pt(4)
+    run = tagline.add_run(_BRAND_TAGLINE)
+    run.font.size = Pt(8)
+    run.font.color.rgb = RGBColor(*_TEXT_GREY)
+    _set_paragraph_bottom_border(tagline)
+
+    # --- Footer as 3-column table ---
+    footer = section.footer
+    for p in list(footer.paragraphs):
+        p._element.getparent().remove(p._element)
+    for table in list(footer.tables):
+        table._element.getparent().remove(table._element)
+
+    available_width = section.page_width - section.left_margin - section.right_margin
+    col_width = int(available_width / 3)
+    table = footer.add_table(rows=1, cols=3, width=available_width)
+    table.autofit = False
+    table.columns[0].width = col_width
+    table.columns[1].width = col_width
+    table.columns[2].width = col_width
+
+    left_cell = table.cell(0, 0)
+    left_para = left_cell.paragraphs[0]
+    left_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    run = left_para.add_run(_FOOTER_LEFT_TEXT)
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor(*_TEXT_GREY)
+
+    centre_cell = table.cell(0, 1)
+    centre_para = centre_cell.paragraphs[0]
+    centre_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = centre_para.add_run(f"Prepared: {prepared_date}")
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor(*_TEXT_GREY)
+
+    right_cell = table.cell(0, 2)
+    right_para = right_cell.paragraphs[0]
+    right_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run = right_para.add_run("Page ")
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor(*_TEXT_GREY)
+    fldChar1 = OxmlElement('w:fldChar')
+    fldChar1.set(qn('w:fldCharType'), 'begin')
+    fldChar1.set(qn('w:dirty'), 'true')
+    instrText = OxmlElement('w:instrText')
+    instrText.set(qn('xml:space'), 'preserve')
+    instrText.text = "PAGE \\* MERGEFORMAT"
+    fldChar2 = OxmlElement('w:fldChar')
+    fldChar2.set(qn('w:fldCharType'), 'end')
+    run = right_para.add_run()
+    run._r.append(fldChar1)
+    run._r.append(instrText)
+    run._r.append(fldChar2)
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor(*_TEXT_GREY)
+
+
+def build_docx(result: Dict[str, Any]) -> BytesIO:
+    """Build a Word (.docx) defence analysis brief using the GBL template layout."""
+    try:
+        from docx import Document
+    except ImportError as exc:
+        raise ImportError("python-docx is required for DOCX export") from exc
+
+    template_path = (
+        Path(__file__).resolve().parent.parent
+        / "data"
+        / "templates"
+        / "defence_analysis.docx"
+    )
+    if template_path.exists():
+        doc = Document(str(template_path))
+        _clear_document_body(doc)
+    else:
+        doc = Document()
+
+    prepared_date = datetime.datetime.now().strftime("%d %B %Y")
+
+    _configure_docx_defaults(doc)
+    _set_docx_header_footer(doc, prepared_date)
+
+    # ─── Title page ─────────────────────────────────────────────────────────-
+    title = doc.add_paragraph()
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title.paragraph_format.space_before = Pt(92)
+    title.paragraph_format.space_after = Pt(0)
+    title.paragraph_format.line_spacing = 1.0
+    run = title.add_run("LEGAL ANALYSIS")
+    run.bold = True
+    run.font.size = Pt(26)
+    run.font.color.rgb = RGBColor(*_BRAND_DARK)
+
+    subtitle = doc.add_paragraph()
+    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    subtitle.paragraph_format.space_before = Pt(0)
+    subtitle.paragraph_format.space_after = Pt(32)
+    subtitle.paragraph_format.line_spacing = 1.0
+    run = subtitle.add_run("& DEFENCE INSTRUCTIONS")
+    run.font.size = Pt(18)
+    run.font.color.rgb = RGBColor(*_BRAND_DARK)
+
+    title_block = _get_section(result, "title_block", "")
+    if title_block:
+        for line in _paragraphs_from_text(title_block):
+            line = line.strip()
+            if not line:
+                continue
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p.paragraph_format.left_indent = Inches(1.9)
+            p.paragraph_format.space_before = Pt(0)
+            p.paragraph_format.space_after = Pt(10)
+            p.paragraph_format.line_spacing = 1.0
+            _add_title_line(p, line)
+
+    prepared = doc.add_paragraph()
+    prepared.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    prepared.paragraph_format.space_before = Pt(38)
+    prepared.paragraph_format.space_after = Pt(0)
+    prepared.paragraph_format.line_spacing = 1.0
+    run = prepared.add_run(f"Prepared: {prepared_date}")
+    run.italic = True
+    run.font.size = Pt(10)
+    run.font.color.rgb = RGBColor(*_TEXT_GREY)
+
+    doc.add_page_break()
+
+    # ─── Table of Contents ───────────────────────────────────────────────────
+    toc_heading = _safe_add_heading(doc, "TABLE OF CONTENTS", level=1)
+    doc.add_paragraph()
+
+    visible_sections = []
+    for key, heading in _MAIN_SECTIONS:
+        content = _get_section(result, key, heading)
+        if content.strip() and not _is_empty_fallback(content, heading):
+            visible_sections.append((key, heading))
+
+    for idx, (key, heading) in enumerate(visible_sections, start=1):
+        p = doc.add_paragraph()
+        p.add_run(f"{idx}. {heading}")
+
+    doc.add_page_break()
+
+    # ─── Main sections ───────────────────────────────────────────────────────
+    for idx, (key, heading) in enumerate(visible_sections, start=1):
+        content = _get_section(result, key, heading)
+        heading_para = _safe_add_heading(doc, f"{idx}. {heading}", level=1)
+        _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
+        _add_section_content(doc, content)
+
+    # ─── Disclaimer ──────────────────────────────────────────────────────────
+    disclaimer = result.get("disclaimer", "")
+    if not disclaimer:
+        disclaimer = (
+            "This document is prepared for the purpose of providing legal analysis and "
+            "instructions to defence counsel. It does not constitute legal advice and should "
+            "not be relied upon as a substitute for independent legal counsel."
+        )
+    doc.add_paragraph()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(disclaimer)
+    run.italic = True
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def _is_empty_fallback(content: str, heading: str) -> bool:
+    """Return True if content is the generated 'No X available' fallback."""
+    return content.strip().lower() == f"no {heading.lower()} available."
+
+
+def _clear_document_body(doc) -> None:
+    """Remove all paragraphs and tables while preserving styles and headers/footers."""
+    for paragraph in list(doc.paragraphs):
+        paragraph._element.getparent().remove(paragraph._element)
+    for table in list(doc.tables):
+        table._element.getparent().remove(table._element)
+
+
+def _add_title_line(paragraph, line: str) -> None:
+    """Add a title-page line, bolding a leading label ending in ':'."""
+    match = re.match(r"^([A-Z][A-Za-z\s()]+):\s*(.*)$", line)
+    if match and not line.lower().startswith("prepared:"):
+        run = paragraph.add_run(match.group(1) + ": ")
+        run.bold = True
+        _add_rich_text(paragraph, match.group(2))
+    else:
+        _add_rich_text(paragraph, line)
+
+
+def _set_paragraph_pagination(paragraph, keep_together: bool = False, keep_with_next: bool = False) -> None:
+    paragraph.paragraph_format.keep_together = keep_together
+    paragraph.paragraph_format.keep_with_next = keep_with_next
+
+
+def _safe_add_heading(doc, text: str, level: int):
+    """Add a heading, falling back to a plain bold paragraph if style is missing."""
+    sizes = {1: 16, 2: 14, 3: 13, 4: 12}
+    try:
+        p = doc.add_heading(text, level=level)
+    except KeyError:
+        p = doc.add_paragraph()
+        try:
+            p.style = f"Heading {level}"
+        except KeyError:
+            pass
+        run = p.add_run(text)
+        run.bold = True
+    for run in p.runs:
+        run.font.name = "Calibri"
+        run.font.size = Pt(sizes.get(level, 12))
+        run.font.color.rgb = RGBColor(*_BRAND_DARK) if level == 1 else RGBColor(0x34, 0x49, 0x5E)
+        run.bold = True
+    return p
+
+
+def _is_statute_citation(text: str) -> bool:
+    """Return True if text looks like a NZ statute/legal basis citation."""
+    return bool(
+        re.search(
+            r"\b(NZBORA|Crimes Act|Search and Surveillance Act|Evidence Act|"
+            r"Misuse of Drugs Act|Criminal Procedure Act|Bail Act|Sentencing Act|"
+            r"Summary Proceedings Act|Children's Act|Oranga Tamariki Act|"
+            r"Land Transport Act|Arms Act|Domestic Violence Act)\b",
+            text,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _normalize_legal_basis(line: str) -> str:
+    """Normalize legal-basis lines to a consistent 'Legal Basis: ...' form."""
+    stripped = line.strip()
+    # Strip a leading bullet if it prefixes "Legal Basis:".
+    if re.match(r"^[-•*]\s+Legal\s+Basis\s*:", stripped, re.IGNORECASE):
+        stripped = re.sub(r"^[-•*]\s+", "", stripped)
+    # Standardise existing Legal Basis lines.
+    if re.match(r"^Legal\s+Basis\s*:", stripped, re.IGNORECASE):
+        rest = re.sub(r"^Legal\s+Basis\s*:\s*", "", stripped, flags=re.IGNORECASE)
+        return f"Legal Basis: {rest}"
+    # Promote bare statute citations to Legal Basis lines.
+    if _is_statute_citation(stripped) and not re.match(
+        r"^[A-Z][^:.!?]{0,59}:", stripped
+    ):
+        return f"Legal Basis: {stripped}"
+    return line
+
+
+def _add_section_content(doc, text: str) -> None:
+    """Add section text, splitting on markdown headings."""
+    blocks = re.split(r"\n(?=(?:##|###|####)\s+)", text)
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+
+        if block.startswith("#### "):
+            heading = block[5:].split("\n")[0].strip()
+            remainder = "\n".join(block.split("\n")[1:])
+            heading_para = _safe_add_heading(doc, heading, level=4)
+            _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
+            if remainder.strip():
+                _add_formatted_paragraphs(doc, remainder)
+        elif block.startswith("### "):
+            heading = block[4:].split("\n")[0].strip()
+            remainder = "\n".join(block.split("\n")[1:])
+            heading_para = _safe_add_heading(doc, heading, level=3)
+            _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
+            if remainder.strip():
+                _add_formatted_paragraphs(doc, remainder)
+        elif block.startswith("## "):
+            heading = block[3:].split("\n")[0].strip()
+            remainder = "\n".join(block.split("\n")[1:])
+            heading_para = _safe_add_heading(doc, heading, level=2)
+            _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
+            if remainder.strip():
+                _add_formatted_paragraphs(doc, remainder)
+        else:
+            _add_formatted_paragraphs(doc, block)
+
+
+def _add_formatted_paragraphs(doc, text: str) -> None:
+    """Add paragraphs with markdown bold, italic, lists, and bold labels.
+
+    Continuation lines under a numbered item are indented so the list structure
+    is visually consistent. Bare statute citations are normalised to
+    "Legal Basis: ..." lines.
+    """
+    lines = text.split("\n")
+    in_list_item = False
+    for raw_line in lines:
+        line = raw_line.rstrip()
+        if not line.strip():
+            continue
+
+        line = _normalize_legal_basis(line)
+
+        # Letter labels (A., B., C.) and strategy names start a new top-level
+        # item, so continuation indentation should reset.
+        if re.match(r"^[A-Z]\.", line) or line.startswith("Strategy Name:"):
+            in_list_item = False
+
+        # Numbered item: "1. Something"
+        numbered = re.match(r"^\s*(\d+)\.\s+(.*)", line)
+        if numbered:
+            p = doc.add_paragraph()
+            _add_rich_text(p, f"{numbered.group(1)}. {numbered.group(2)}")
+            in_list_item = True
+            continue
+
+        # Bullet item: "- Something" or "• Something"
+        bullet = re.match(r"^\s*[-•*]\s+(.*)", line)
+        if bullet:
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Inches(0.25)
+            _add_rich_text(p, f"\u2022 {bullet.group(1)}")
+            in_list_item = True
+            continue
+
+        # Bold markdown label: **Label:** rest
+        bold_colon = re.match(r"^\s*\*\*(.+?)\*\*\s*:?\s*(.*)", line)
+        if bold_colon:
+            p = doc.add_paragraph()
+            if in_list_item:
+                p.paragraph_format.left_indent = Inches(0.25)
+            run = p.add_run(bold_colon.group(1))
+            run.bold = True
+            if bold_colon.group(2):
+                _add_rich_text(p, " " + bold_colon.group(2))
+            continue
+
+        # Bold label ending in colon, e.g., "Key findings:", "INSTRUCTION 1:", "Assessment:"
+        label_colon = re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s+(.*)", line)
+        if label_colon:
+            p = doc.add_paragraph()
+            if in_list_item:
+                p.paragraph_format.left_indent = Inches(0.25)
+            run = p.add_run(label_colon.group(1) + ":")
+            run.bold = True
+            _add_rich_text(p, " " + label_colon.group(2))
+            continue
+
+        # Plain paragraph (continuation of a list item)
+        p = doc.add_paragraph()
+        if in_list_item:
+            p.paragraph_format.left_indent = Inches(0.25)
+        _add_rich_text(p, line)
+
+
+def _add_rich_text(paragraph, text: str) -> None:
+    """Add text to a paragraph, handling inline **bold** and _italic_."""
+    parts = re.split(r"(\*\*[^*]+?\*\*|_[^_]+?_)", text)
+    for part in parts:
+        if part.startswith("**") and part.endswith("**"):
+            run = paragraph.add_run(part[2:-2])
+            run.bold = True
+        elif part.startswith("_") and part.endswith("_"):
+            run = paragraph.add_run(part[1:-1])
+            run.italic = True
+        else:
+            paragraph.add_run(part)
+
+
+def _pdf_plain_text(text: str) -> str:
+    """Remove inline markdown bold/italic markers for PDF plain rendering."""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"_(.+?)_", r"\1", text)
+    return text
+
+
+def _pdf_register_fonts(pdf) -> str:
+    """Register Calibri TTF fonts if available; otherwise fall back to Helvetica."""
+    if os.name != "nt":
+        return "Helvetica"
+    fonts_dir = Path(os.environ.get("SYSTEMROOT", "C:/Windows")) / "Fonts"
+    variants = {
+        "": fonts_dir / "calibri.ttf",
+        "B": fonts_dir / "calibrib.ttf",
+        "I": fonts_dir / "calibrii.ttf",
+        "BI": fonts_dir / "calibriz.ttf",
+    }
+    if not all(p.exists() for p in variants.values()):
+        return "Helvetica"
+    try:
+        for style, path in variants.items():
+            pdf.add_font("Calibri", style, str(path))
+        return "Calibri"
+    except Exception:
+        return "Helvetica"
+
+
+def _pdf_register_emoji_font(pdf) -> Optional[str]:
+    """Register a Windows emoji font for the scales icon; return None if unavailable."""
+    if os.name != "nt":
+        return None
+    emoji_path = Path(os.environ.get("SYSTEMROOT", "C:/Windows")) / "Fonts" / "seguiemj.ttf"
+    if not emoji_path.exists():
+        return None
+    try:
+        pdf.add_font("SegoeEmoji", "", str(emoji_path))
+        return "SegoeEmoji"
+    except Exception:
+        return None
+
+
+def _pdf_font_family(pdf) -> str:
+    return getattr(pdf, "font_family", "Helvetica")
+
+
+def _pdf_check_page_break(pdf, needed_mm: float) -> None:
+    """Insert a page break if there is not enough vertical room remaining."""
+    if pdf.get_y() + needed_mm > pdf.h - pdf.b_margin:
+        pdf.add_page()
+
+
+def _pdf_draw_title_block_field(pdf, label: str, value: str, y: float) -> float:
+    """Render one title-block field left-aligned under the title: 'Label: value'."""
+    family = _pdf_font_family(pdf)
+    label_text = _normalize_for_pdf(f"{label}:")
+    value_text = _normalize_for_pdf(f" {value}")
+
+    x = getattr(pdf, "title_left_edge", pdf.l_margin)
+    pdf.set_font(family, "B", 12)
+    pdf.set_text_color(30, 30, 30)
+    pdf.set_xy(x, y)
+    pdf.cell(0, 7, label_text, new_x="LMARGIN", new_y="NEXT", align="L")
+    pdf.set_font(family, "", 12)
+    # Overprint the value on the same line by moving back up.
+    pdf.set_xy(x + pdf.get_string_width(label_text), y)
+    pdf.cell(0, 7, value_text, new_x="LMARGIN", new_y="NEXT", align="L")
+    return y + 7
+
+
+def _pdf_add_paragraph(
+    pdf,
+    text: str,
+    indent: bool = False,
+    extra_indent: float = 0,
+    line_height: float = 6.5,
+    align: str = "L",
+) -> None:
+    """Add a normal paragraph to the PDF, wrapping at page margins."""
+    offset = 6.35 if indent else 0  # 0.25 in
+    if indent or extra_indent:
+        pdf.set_x(pdf.l_margin + offset + extra_indent)
+    pdf.multi_cell(0, line_height, _normalize_for_pdf(_pdf_plain_text(text)), align=align)
+    pdf.ln(2)
+
+
+def _pdf_add_section_content(pdf, text: str) -> None:
+    """Render section text, splitting on markdown headings and lists."""
+    family = _pdf_font_family(pdf)
+    blocks = re.split(r"\n(?=(?:##|###|####)\s+)", text)
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+
+        if block.startswith("#### "):
+            heading = block[5:].split("\n")[0].strip()
+            remainder = "\n".join(block.split("\n")[1:])
+            _pdf_check_page_break(pdf, 15)
+            pdf.set_font(family, "B", 12)
+            pdf.set_text_color(52, 73, 94)
+            _pdf_add_paragraph(pdf, heading, line_height=6.5)
+            pdf.set_font(family, "", 12)
+            pdf.set_text_color(30, 30, 30)
+            if remainder.strip():
+                _pdf_add_formatted_lines(pdf, remainder)
+        elif block.startswith("### "):
+            heading = block[4:].split("\n")[0].strip()
+            remainder = "\n".join(block.split("\n")[1:])
+            _pdf_check_page_break(pdf, 17)
+            pdf.set_font(family, "B", 13)
+            pdf.set_text_color(52, 73, 94)
+            _pdf_add_paragraph(pdf, heading, line_height=7)
+            pdf.set_font(family, "", 12)
+            pdf.set_text_color(30, 30, 30)
+            if remainder.strip():
+                _pdf_add_formatted_lines(pdf, remainder)
+        elif block.startswith("## "):
+            heading = block[3:].split("\n")[0].strip()
+            remainder = "\n".join(block.split("\n")[1:])
+            _pdf_check_page_break(pdf, 20)
+            pdf.set_font(family, "B", 14)
+            pdf.set_text_color(52, 73, 94)
+            _pdf_add_paragraph(pdf, heading, line_height=7.5)
+            pdf.set_font(family, "", 12)
+            pdf.set_text_color(30, 30, 30)
+            if remainder.strip():
+                _pdf_add_formatted_lines(pdf, remainder)
+        else:
+            _pdf_add_formatted_lines(pdf, block)
+
+
+def _pdf_add_formatted_lines(pdf, text: str) -> None:
+    """Add lines with markdown bold labels, numbered/bullet lists, and plain paragraphs.
+
+    Mirrors _add_formatted_paragraphs so PDF and DOCX share the same visual
+    structure: numbered items are slightly indented, continuation lines are
+    indented further, and bare statute citations become "Legal Basis: ..." lines.
+    """
+    family = _pdf_font_family(pdf)
+    in_list_item = False
+    for raw_line in text.split("\n"):
+        line = raw_line.rstrip()
+        if not line.strip():
+            continue
+
+        line = _normalize_legal_basis(line)
+
+        # Letter labels (A., B., C.) and strategy names start a new top-level
+        # item, so continuation indentation should reset.
+        if re.match(r"^[A-Z]\.", line) or line.startswith("Strategy Name:"):
+            in_list_item = False
+
+        numbered = re.match(r"^\s*(\d+)\.\s+(.*)", line)
+        if numbered:
+            _pdf_add_paragraph(pdf, f"{numbered.group(1)}. {numbered.group(2)}", indent=True)
+            in_list_item = True
+            continue
+
+        bullet = re.match(r"^\s*[-•*]\s+(.*)", line)
+        if bullet:
+            _pdf_add_paragraph(pdf, f"\u2022 {bullet.group(1)}", indent=True, extra_indent=0)
+            in_list_item = True
+            continue
+
+        bold_colon = re.match(r"^\s*\*\*(.+?)\*\*\s*:?\s*(.*)", line)
+        if bold_colon:
+            _pdf_check_page_break(pdf, 10)
+            pdf.set_font(family, "B", 12)
+            pdf.set_x(pdf.l_margin + (6.35 if in_list_item else 0))
+            pdf.cell(0, 6.5, _normalize_for_pdf(bold_colon.group(1)), new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font(family, "", 12)
+            if bold_colon.group(2):
+                _pdf_add_paragraph(pdf, bold_colon.group(2), indent=True, extra_indent=0)
+            continue
+
+        label_colon = re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s+(.*)", line)
+        if label_colon:
+            _pdf_check_page_break(pdf, 10)
+            pdf.set_font(family, "B", 12)
+            pdf.set_x(pdf.l_margin + (6.35 if in_list_item else 0))
+            pdf.cell(0, 6.5, _normalize_for_pdf(label_colon.group(1) + ":"), new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font(family, "", 12)
+            _pdf_add_paragraph(pdf, label_colon.group(2), indent=True, extra_indent=0)
+            continue
+
+        _pdf_add_paragraph(pdf, line, indent=True, extra_indent=6.35 if in_list_item else 0)
+
+
+def _pdf_draw_header(pdf) -> None:
+    """Draw the AEGIS brand header with scales icons on every page."""
+    family = _pdf_font_family(pdf)
+    emoji_family = getattr(pdf, "emoji_font_family", None)
+    brand = "AEGIS"
+    scale = "\u2696"  # ⚖ scales icon
+    spacing = 4.0
+
+    # Measure widths
+    pdf.set_font(family, "B", 18)
+    brand_w = pdf.get_string_width(brand)
+    scale_w = 0.0
+    if emoji_family:
+        pdf.set_font(emoji_family, "", 18)
+        scale_w = pdf.get_string_width(scale)
+
+    total_w = scale_w + spacing + brand_w + spacing + scale_w
+    x = pdf.l_margin + (pdf.w - pdf.l_margin - pdf.r_margin - total_w) / 2
+    y = 10
+
+    if emoji_family and scale_w:
+        pdf.set_font(emoji_family, "", 18)
+        pdf.set_text_color(*_BRAND_DARK)
+        pdf.set_xy(x, y)
+        pdf.cell(scale_w, 8, scale, new_x="RIGHT", new_y="TOP", align="C")
+        x += scale_w + spacing
+
+    pdf.set_font(family, "B", 18)
+    pdf.set_text_color(*_BRAND_DARK)
+    pdf.set_xy(x, y)
+    pdf.cell(brand_w, 8, brand, new_x="RIGHT", new_y="TOP", align="C")
+
+    if emoji_family and scale_w:
+        x += brand_w + spacing
+        pdf.set_font(emoji_family, "", 18)
+        pdf.set_text_color(*_BRAND_DARK)
+        pdf.set_xy(x, y)
+        pdf.cell(scale_w, 8, scale, new_x="RIGHT", new_y="TOP", align="C")
+
+    pdf.set_xy(pdf.l_margin, y + 8)
+    pdf.set_font(family, "", 8)
+    pdf.set_text_color(*_TEXT_GREY)
+    pdf.cell(0, 5, _normalize_for_pdf(_BRAND_TAGLINE), new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.set_draw_color(*_BRAND_DARK)
+    pdf.line(pdf.l_margin, 28, pdf.w - pdf.r_margin, 28)
+    pdf.set_y(32)
+
+
+def _pdf_draw_footer(pdf) -> None:
+    family = _pdf_font_family(pdf)
+    pdf.set_y(-20)
+    pdf.set_font(family, "", 9)
+    pdf.set_text_color(*_TEXT_GREY)
+    prepared = getattr(pdf, "prepared_date", datetime.datetime.now().strftime("%d %B %Y"))
+    col_width = (pdf.w - pdf.l_margin - pdf.r_margin) / 3
+    pdf.set_x(pdf.l_margin)
+    pdf.cell(col_width, 5, _normalize_for_pdf(_FOOTER_LEFT_TEXT), new_x="RIGHT", new_y="TOP", align="L")
+    pdf.cell(col_width, 5, _normalize_for_pdf(f"Prepared: {prepared}"), new_x="RIGHT", new_y="TOP", align="C")
+    pdf.cell(col_width, 5, _normalize_for_pdf(f"Page {pdf.page_no()}"), new_x="LMARGIN", new_y="NEXT", align="R")
+
+
+if FPDF is not None:
+    class _AegisPDF(FPDF):
+        """FPDF subclass that renders the AEGIS brand header/footer on every page."""
+
+        prepared_date: str = ""
+        font_family: str = "Helvetica"
+        emoji_font_family: Optional[str] = None
+
+        def header(self) -> None:
+            _pdf_draw_header(self)
+
+        def footer(self) -> None:
+            _pdf_draw_footer(self)
+
+
+def _build_pdf_with_fpdf(result: Dict[str, Any], elapsed: Optional[float] = None, server_time: Optional[float] = None) -> BytesIO:
+    """FPDF2 fallback renderer that mirrors the DOCX layout as closely as possible."""
+    if FPDF is None:
+        raise ImportError("fpdf2 is required for PDF export")
+
+    prepared_date = datetime.datetime.now().strftime("%d %B %Y")
+
+    disclaimer = result.get("disclaimer", "")
+    if not disclaimer:
+        disclaimer = (
+            "This document is prepared for the purpose of providing legal analysis and "
+            "instructions to defence counsel. It does not constitute legal advice and should "
+            "not be relied upon as a substitute for independent legal counsel."
+        )
+
+    pdf = _AegisPDF()
+    pdf.prepared_date = prepared_date
+    pdf.font_family = _pdf_register_fonts(pdf)
+    pdf.emoji_font_family = _pdf_register_emoji_font(pdf)
+    family = pdf.font_family
+
+    inch = 25.4
+    pdf.set_margins(inch, inch)
+    pdf.set_right_margin(inch)
+    pdf.set_auto_page_break(auto=True, margin=inch)
+    pdf.set_draw_color(*_BRAND_DARK)
+    pdf.add_page()
+
+    # ─── Title page ──────────────────────────────────────────────────────────
+    pdf.set_y(58)
+    pdf.set_font(family, "B", 26)
+    pdf.set_text_color(*_BRAND_DARK)
+    pdf.cell(0, 14, _normalize_for_pdf("LEGAL ANALYSIS"), new_x="LMARGIN", new_y="NEXT", align="C")
+
+    # Store the title's left edge so the title block can align with it.
+    pdf.set_font(family, "B", 26)
+    title_w = pdf.get_string_width(_normalize_for_pdf("LEGAL ANALYSIS"))
+    content_w = pdf.w - pdf.l_margin - pdf.r_margin
+    pdf.title_left_edge = pdf.l_margin + max(0.0, (content_w - title_w) / 2)
+
+    pdf.set_font(family, "", 18)
+    pdf.set_text_color(*_BRAND_DARK)
+    pdf.cell(0, 10, _normalize_for_pdf("& DEFENCE INSTRUCTIONS"), new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.ln(8)
+
+    title_block = _get_section(result, "title_block", "")
+    if title_block:
+        for line in _paragraphs_from_text(title_block):
+            line = line.strip()
+            if not line:
+                continue
+            match = re.match(r"^([A-Z][A-Za-z\s()]+):\s*(.*)$", line)
+            if match and not line.lower().startswith("prepared:"):
+                pdf.set_y(_pdf_draw_title_block_field(pdf, match.group(1).strip(), match.group(2).strip(), pdf.get_y()))
+            else:
+                pdf.set_font(family, "", 12)
+                pdf.set_text_color(30, 30, 30)
+                pdf.set_x(getattr(pdf, "title_left_edge", pdf.l_margin))
+                pdf.multi_cell(0, 6.5, _normalize_for_pdf(line), align="L")
+                pdf.set_y(pdf.get_y() + 1)
+        pdf.ln(14)
+
+    pdf.set_font(family, "I", 10)
+    pdf.set_text_color(*_TEXT_GREY)
+    pdf.cell(0, 8, _normalize_for_pdf(f"Prepared: {prepared_date}"), new_x="LMARGIN", new_y="NEXT", align="C")
+
+    meta_parts = []
+    if elapsed is not None:
+        meta_parts.append(f"Total Time: {elapsed}s")
+    if server_time is not None:
+        meta_parts.append(f"Server Time: {server_time}s")
+    if meta_parts:
+        pdf.set_font(family, "I", 9)
+        pdf.set_text_color(*_TEXT_GREY)
+        pdf.cell(0, 6, _normalize_for_pdf(" | ".join(meta_parts)), new_x="LMARGIN", new_y="NEXT", align="C")
+
+    visible_sections = []
+    for key, heading in _MAIN_SECTIONS:
+        content = _get_section(result, key, heading)
+        if content.strip() and not _is_empty_fallback(content, heading):
+            visible_sections.append((key, heading))
+
+    # ─── Table of Contents ───────────────────────────────────────────────────
+    pdf.add_page()
+    pdf.set_font(family, "B", 16)
+    pdf.set_text_color(*_BRAND_DARK)
+    pdf.cell(0, 12, _normalize_for_pdf("TABLE OF CONTENTS"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(4)
+
+    pdf.set_font(family, "", 12)
+    pdf.set_text_color(30, 30, 30)
+    for idx, (key, heading) in enumerate(visible_sections, start=1):
+        pdf.cell(0, 7, _normalize_for_pdf(f"{idx}. {heading}"), new_x="LMARGIN", new_y="NEXT")
+
+    # ─── Main sections ───────────────────────────────────────────────────────
+    for idx, (key, heading) in enumerate(visible_sections, start=1):
+        content = _get_section(result, key, heading)
+        if not content or not content.strip() or _is_empty_fallback(content, heading):
+            continue
+        _pdf_check_page_break(pdf, 30)
+        pdf.set_font(family, "B", 16)
+        pdf.set_text_color(*_BRAND_DARK)
+        pdf.cell(0, 8.5, _normalize_for_pdf(f"{idx}. {heading}"), new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(1)
+        pdf.set_font(family, "", 12)
+        pdf.set_text_color(30, 30, 30)
+        _pdf_add_section_content(pdf, content)
+        pdf.ln(3)
+
+    # ─── Disclaimer ──────────────────────────────────────────────────────────
+    pdf.ln(6)
+    pdf.set_font(family, "I", 9)
+    pdf.set_text_color(*_TEXT_GREY)
+    pdf.multi_cell(0, 5, _normalize_for_pdf(disclaimer), align="C")
+
+    buffer = BytesIO()
+    pdf.output(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def build_pdf(result: Dict[str, Any], elapsed: Optional[float] = None, server_time: Optional[float] = None) -> BytesIO:
+    """Build a PDF brief by converting the DOCX output via Microsoft Word.
+
+    Falls back to the legacy fpdf2 renderer if docx2pdf is unavailable or the
+    conversion fails (e.g., Word is not installed or running headless).
+    """
+    try:
+        from docx2pdf import convert
+    except ImportError:
+        logging.getLogger(__name__).info("docx2pdf unavailable; building PDF with fpdf2 fallback")
+        try:
+            return _build_pdf_with_fpdf(result, elapsed=elapsed, server_time=server_time)
+        except Exception:
+            logging.getLogger(__name__).error("fpdf2 PDF generation failed", exc_info=True)
+            raise
+
+    docx_buffer = build_docx(result)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, "brief.docx")
+        pdf_path = os.path.join(tmpdir, "brief.pdf")
+
+        with open(docx_path, "wb") as f:
+            f.write(docx_buffer.getvalue())
+
+        try:
+            convert(docx_path, pdf_path)
+            with open(pdf_path, "rb") as f:
+                return BytesIO(f.read())
+        except Exception:
+            logging.getLogger(__name__).warning("docx2pdf conversion failed; falling back to fpdf2", exc_info=True)
+            try:
+                return _build_pdf_with_fpdf(result, elapsed=elapsed, server_time=server_time)
+            except Exception:
+                logging.getLogger(__name__).error("fpdf2 PDF generation failed", exc_info=True)
+                raise

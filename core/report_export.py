@@ -384,7 +384,7 @@ def build_docx(result: Dict[str, Any]) -> BytesIO:
         content = _get_section(result, key, heading)
         heading_para = _safe_add_heading(doc, f"{idx}. {heading}", level=1)
         _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
-        _add_section_content(doc, content)
+        _add_section_content(doc, content, keep_unit_together=True)
 
     # ─── Disclaimer ──────────────────────────────────────────────────────────
     disclaimer = result.get("disclaimer", "")
@@ -490,7 +490,7 @@ def _normalize_legal_basis(line: str) -> str:
     return line
 
 
-def _add_section_content(doc, text: str) -> None:
+def _add_section_content(doc, text: str, keep_unit_together: bool = True) -> None:
     """Add section text, splitting on markdown headings."""
     blocks = re.split(r"\n(?=(?:##|###|####)\s+)", text)
     for block in blocks:
@@ -504,26 +504,26 @@ def _add_section_content(doc, text: str) -> None:
             heading_para = _safe_add_heading(doc, heading, level=4)
             _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
             if remainder.strip():
-                _add_formatted_paragraphs(doc, remainder)
+                _add_formatted_paragraphs(doc, remainder, keep_unit_together=keep_unit_together)
         elif block.startswith("### "):
             heading = block[4:].split("\n")[0].strip()
             remainder = "\n".join(block.split("\n")[1:])
             heading_para = _safe_add_heading(doc, heading, level=3)
             _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
             if remainder.strip():
-                _add_formatted_paragraphs(doc, remainder)
+                _add_formatted_paragraphs(doc, remainder, keep_unit_together=keep_unit_together)
         elif block.startswith("## "):
             heading = block[3:].split("\n")[0].strip()
             remainder = "\n".join(block.split("\n")[1:])
             heading_para = _safe_add_heading(doc, heading, level=2)
             _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
             if remainder.strip():
-                _add_formatted_paragraphs(doc, remainder)
+                _add_formatted_paragraphs(doc, remainder, keep_unit_together=keep_unit_together)
         else:
-            _add_formatted_paragraphs(doc, block)
+            _add_formatted_paragraphs(doc, block, keep_unit_together=keep_unit_together)
 
 
-def _add_formatted_paragraphs(doc, text: str) -> None:
+def _add_formatted_paragraphs(doc, text: str, keep_unit_together: bool = False) -> None:
     """Add paragraphs with markdown bold, italic, lists, and bold labels.
 
     Continuation lines under a numbered item are indented so the list structure
@@ -531,8 +531,10 @@ def _add_formatted_paragraphs(doc, text: str) -> None:
     "Legal Basis: ..." lines.
     """
     lines = text.split("\n")
+    non_empty_indices = [i for i, raw_line in enumerate(lines) if raw_line.strip()]
+    last_idx = non_empty_indices[-1] if non_empty_indices else -1
     in_list_item = False
-    for raw_line in lines:
+    for i, raw_line in enumerate(lines):
         line = raw_line.rstrip()
         if not line.strip():
             continue
@@ -544,26 +546,22 @@ def _add_formatted_paragraphs(doc, text: str) -> None:
         if re.match(r"^[A-Z]\.", line) or line.startswith("Strategy Name:"):
             in_list_item = False
 
+        is_last = i == last_idx
+
         # Numbered item: "1. Something"
         numbered = re.match(r"^\s*(\d+)\.\s+(.*)", line)
         if numbered:
             p = doc.add_paragraph()
             _add_rich_text(p, f"{numbered.group(1)}. {numbered.group(2)}")
             in_list_item = True
-            continue
-
         # Bullet item: "- Something" or "• Something"
-        bullet = re.match(r"^\s*[-•*]\s+(.*)", line)
-        if bullet:
+        elif (bullet := re.match(r"^\s*[-•*]\s+(.*)", line)):
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Inches(0.25)
             _add_rich_text(p, f"\u2022 {bullet.group(1)}")
             in_list_item = True
-            continue
-
         # Bold markdown label: **Label:** rest
-        bold_colon = re.match(r"^\s*\*\*(.+?)\*\*\s*:?\s*(.*)", line)
-        if bold_colon:
+        elif (bold_colon := re.match(r"^\s*\*\*(.+?)\*\*\s*:?\s*(.*)", line)):
             p = doc.add_paragraph()
             if in_list_item:
                 p.paragraph_format.left_indent = Inches(0.25)
@@ -571,24 +569,23 @@ def _add_formatted_paragraphs(doc, text: str) -> None:
             run.bold = True
             if bold_colon.group(2):
                 _add_rich_text(p, " " + bold_colon.group(2))
-            continue
-
         # Bold label ending in colon, e.g., "Key findings:", "INSTRUCTION 1:", "Assessment:"
-        label_colon = re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s+(.*)", line)
-        if label_colon:
+        elif (label_colon := re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s+(.*)", line)):
             p = doc.add_paragraph()
             if in_list_item:
                 p.paragraph_format.left_indent = Inches(0.25)
             run = p.add_run(label_colon.group(1) + ":")
             run.bold = True
             _add_rich_text(p, " " + label_colon.group(2))
-            continue
-
         # Plain paragraph (continuation of a list item)
-        p = doc.add_paragraph()
-        if in_list_item:
-            p.paragraph_format.left_indent = Inches(0.25)
-        _add_rich_text(p, line)
+        else:
+            p = doc.add_paragraph()
+            if in_list_item:
+                p.paragraph_format.left_indent = Inches(0.25)
+            _add_rich_text(p, line)
+
+        if keep_unit_together:
+            _set_paragraph_pagination(p, keep_together=True, keep_with_next=not is_last)
 
 
 def _add_rich_text(paragraph, text: str) -> None:

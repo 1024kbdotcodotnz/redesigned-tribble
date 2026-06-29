@@ -1,0 +1,58 @@
+{
+  "title": "Arms Act 1983",
+  "act_id": "arms_act_1983",
+  "sections": [
+    {
+      "number": "s 4",
+      "title": "Possession of firearms without licence",
+      "content": "No person shall have in their possession any firearm unless that person holds a firearms licence. Maximum penalty: imprisonment not exceeding 3 months or fine not exceeding $1,000."
+    },
+    {
+      "number": "s 5",
+      "title": "Possession of pistol without permit",
+      "content": "No person shall have in their possession any pistol unless that person holds a permit to possess the pistol (B endorsement). Maximum penalty: imprisonment not exceeding 3 years or fine not exceeding $5,000."
+    },
+    {
+      "number": "s 6",
+      "title": "Possession of MSSA without permit",
+      "content": "No person shall have in their possession any military style semi-automatic firearm (MSSA) unless that person holds a permit (E endorsement). Maximum penalty: imprisonment not exceeding 3 years or fine not exceeding $5,000."
+    },
+    {
+      "number": "s 11",
+      "title": "Prohibited firearms",
+      "content": "Certain firearms are prohibited (including fully automatic firearms without special permit). Maximum penalty for possession: imprisonment not exceeding 14 years."
+    },
+    {
+      "number": "s 12",
+      "title": "Prohibited magazines",
+      "content": "Following the March 2019 law changes, magazines over specified capacity are prohibited. Maximum penalty: imprisonment not exceeding 2 years or fine not exceeding $5,000."
+    },
+    {
+      "number": "s 31",
+      "title": "Unlawful carriage of firearms",
+      "content": "It is an offence to unlawfully carry any firearm. Maximum penalty: imprisonment not exceeding 2 years or fine not exceeding $5,000."
+    },
+    {
+      "number": "s 32",
+      "title": "Discharging firearm near dwelling or public place",
+      "content": "Every person commits an offence who discharges any firearm in or near any dwelling or public place so as to endanger property or endanger, annoy, or frighten any person. Maximum penalty: imprisonment not exceeding 3 months or fine not exceeding $1,000."
+    },
+    {
+      "number": "s 48",
+      "title": "Self-defence and defence of others",
+      "content": "Reasonable force may be used in self-defence or defence of another person, provided the force is reasonable in the circumstances. This includes the use of firearms in appropriate circumstances."
+    },
+    {
+      "number": "s 50",
+      "title": "Police may require delivery of firearms",
+      "content": "Any constable may require any person apparently in possession of any firearm to deliver it up immediately for inspection and may retain it for such reasonable time as may be necessary for that purpose."
+    },
+    {
+      "number": "s 60",
+      "title": "Search for firearms without warrant",
+      "content": "Where a constable has reasonable grounds to believe that any firearm is being misused, neglected, or is in unsafe custody, the constable may search for the firearm without warrant."
+    }
+  ],
+  "parsed_date": "2026-03-03T11:21:00.002334",
+  "source": "Comprehensive compilation"
+}

@@ -1,0 +1,55 @@
+: "# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and databases
+*.log
+logs/
+*.sqlite3
+
+# Data and generated files
+tenant_data/
+chroma_db/
+demo_sessions/
+aegis_export_samples/
+*.db
+
+# Backups and temp files
+*.bak
+*.bak.*
+*.pre_restore
+*.before_*
+**/*.before_*
+*.corrupted.*
+*.patch
+
+# Superpowers workspace
+.superpowers/
+
+# Environment
+.env
+!.env.example
+
+# Misc
+contents.zip
+cookies.txt
+*.nohup
+api_server.log

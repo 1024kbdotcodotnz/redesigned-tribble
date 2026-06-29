@@ -1,0 +1,16 @@
+{
+  "title": "Police Manual - Search Warrants",
+  "chapter": "Search",
+  "section": "Search Warrants",
+  "category": "Search and Seizure",
+  "content": "\nPOLICE MANUAL - SEARCH WARRANTS\n\nSection 18 Search and Surveillance Act 2012\n\nRequirements for Issuing Search Warrant:\n1. Reasonable grounds to suspect offence committed\n2. Reasonable grounds to believe evidence will be found\n3. Specified place/person/thing to be searched\n4. Must be issued by independent issuing officer (not police)\n\nApplication Requirements:\n- Must be in writing\n- Must specify offence suspected\n- Must describe place/person with particularity\n- Must specify items sought\n- Cannot be \"fishing expedition\"\n\nExecution Requirements:\n- Must be executed within 14 days of issue\n- Must be available for inspection\n- Occupier must be informed of warrant and rights\n- Search must be at reasonable hour (unless urgent)\n- Must be conducted in reasonable manner\n\nParticularity Requirement:\n- Physical address must be specific\n- Description must enable identification of place\n- Cannot cover multiple premises on single warrant without justification\n\nOccupier Rights:\n- Right to see warrant\n- Right to legal advice\n- Right to observe search (unless would impede)\n- Right to copy of warrant\n\nPost-Search:\n- List of items seized must be provided\n- Copy of warrant left with occupier\n- Return must be made to issuing officer\n\nRelated Cases:\n- R v Williams [2007] - Warrant particularity\n- R v McGowan [2014] - Staleness of information\n- R v McGregor [2020] - Description requirements\n",
+  "key_procedures": [
+    "Obtain warrant from independent issuing officer",
+    "Execute within 14 days",
+    "Inform occupier of warrant and rights",
+    "Provide list of seized items",
+    "Leave copy of warrant with occupier"
+  ],
+  "created": "2026-03-03T10:10:28.521891",
+  "source": "Police Manual (NZ Police)"
+}

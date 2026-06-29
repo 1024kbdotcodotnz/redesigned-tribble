@@ -1,0 +1,17 @@
+{
+  "title": "Police Manual - Wanted Persons",
+  "chapter": "W",
+  "section": "Locating and Apprehending Wanted Persons",
+  "category": "Investigations",
+  "content": "\nPOLICE MANUAL - WANTED PERSONS\n\nWarrants to Arrest:\n- Bench warrants (court issued for non-appearance)\n- Arrest warrants\n- Must be executed without unnecessary delay\n\nPosting as Wanted:\n- Enter in Police database\n- Interpol Red Notice (international)\n- Border alerts\n- Public appeals (if appropriate)\n- Media releases\n\nLocation Methods:\n- Database checks\n- Informants\n- Surveillance\n- Associate inquiries\n- Bank monitoring\n- Cell site analysis\n- Social media monitoring\n- Passport tracking\n\nApprehension:\n- Any Police officer can execute warrant\n- Time and place\n- Use of force if necessary\n- Rights on arrest\n- Bail consideration\n\nSafe Surrender:\n- Can negotiate surrender\n- Lawyer present\n- Public place\n- Safety considerations\n- Media management\n\nExtradition:\n- Interstate (Australia)\n- International\n- Extradition Act 1999\n- Treaty or non-treaty\n- Court process\n- Ministerial decision\n\nRelated Legislation:\n- Criminal Procedure Act 2011\n- Extradition Act 1999\n- Immigration Act 2009\n",
+  "key_procedures": [
+    "Enter wanted person in database",
+    "Set up alerts",
+    "Conduct inquiries to locate",
+    "Execute warrant",
+    "Consider safe surrender options",
+    "Extradition if international"
+  ],
+  "created": "2026-03-03T10:45:46.194038",
+  "source": "Police Manual (NZ Police) - Compiled"
+}

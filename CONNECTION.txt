@@ -1,0 +1,8 @@
+RunPod Connection Details
+==========================
+IP: 69.30.85.79
+Port: 22020
+SSH Key: ~/.ssh/id_ed25519
+
+Full SSH Command:
+  ssh root@69.30.85.79 -p 22020 -i ~/.ssh/id_ed25519

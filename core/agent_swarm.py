@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 from core.prompts import PROMPTS
 from core.parser import DisclosureParser, ParsedDisclosure
 from core.fact_sheet_builder import FactSheetBuilder
+from core.verification import ReportVerifier
 
 
 def ollama_unload_model(model: str, host: str = "http://localhost:11434") -> None:
@@ -229,6 +230,36 @@ class AgentSwarm:
             admissions_output, cross_exam_output, disclosure_forensic_output,
             primary_charge
         )
+
+        # Lightweight verification pass: flag unsupported factual claims and
+        # paragraphs that lack explicit disclosure anchors.
+        orchestrator_markdown = "\n\n".join([
+            report.title_block,
+            report.executive_summary,
+            report.charge_and_legislative_framework,
+            report.summary_of_evidence,
+            report.assessment_of_prosecution_case,
+            report.evidence_analysis,
+            report.elements_of_the_offence,
+            report.defence_strategies,
+            report.cross_examination_priorities,
+            report.disclosure_and_forensic_gaps,
+            report.instructions_to_counsel_pre_trial,
+            report.pre_trial_instructions_for_lawyer,
+            report.evidentiary_issues_to_raise,
+            report.conclusion,
+            report.conclusion_and_risk_assessment,
+            report.disclaimer,
+        ])
+        verifier = ReportVerifier()
+        verified_markdown = verifier.verify(orchestrator_markdown, fact_sheet)
+        if "## VERIFICATION NOTES" in verified_markdown:
+            verification_notes = "## VERIFICATION NOTES" + verified_markdown.split("## VERIFICATION NOTES", 1)[1]
+            report.disclaimer = (
+                (report.disclaimer or "").strip()
+                + "\n\n"
+                + verification_notes.strip()
+            )
 
         # Agent 7: Citation Auditor (verify final report against sources)
         report = self._audit_report(report, source_results)

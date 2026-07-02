@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol
 
 from core.fact_sheet import FactSheet
 from core.agent_swarm import OllamaLLMClient
@@ -23,6 +23,18 @@ class IssueSpottingResult:
     recommended_sections: List[str] = field(default_factory=list)
 
 
+class LLMClient(Protocol):
+    """Minimal protocol for issue-spotter dependency injection."""
+
+    def generate_json(
+        self,
+        prompt: str,
+        system: str = "",
+        temperature: float = 0.1,
+        max_tokens: int = 4000,
+    ) -> Dict[str, Any]: ...
+
+
 class IssueSpotter:
     """Select the strongest defence theory from an anchored fact sheet."""
 
@@ -37,7 +49,10 @@ class IssueSpotter:
         "Cross-Examination",
     ]
 
-    def __init__(self, llm_client: Optional[OllamaLLMClient] = None):
+    VALID_STRENGTHS = {"STRONG", "MODERATE", "WEAK"}
+    VALID_DISPOSITIONS = {"PRIMARY", "SECONDARY", "BACKUP"}
+
+    def __init__(self, llm_client: Optional[LLMClient] = None):
         self.llm_client = llm_client or OllamaLLMClient(
             model=os.getenv("ISSUE_SPOTTER_MODEL", "qwen2.5:14b"),
             host=os.getenv("OLLAMA_HOST", "http://localhost:11434"),
@@ -56,7 +71,7 @@ class IssueSpotter:
             temperature=0.2,
             max_tokens=3000,
         )
-        return self._parse_response(response)
+        return self._parse_response(response, sheet)
 
     def _system_prompt(self) -> str:
         return (
@@ -105,23 +120,11 @@ Return JSON in this exact schema:
 }}
 """
 
-    def _parse_response(self, response: Dict[str, Any]) -> IssueSpottingResult:
+    def _parse_response(
+        self, response: Dict[str, Any], sheet: FactSheet
+    ) -> IssueSpottingResult:
         if "error" in response:
-            # Fallback to a generic theory if JSON parsing failed
-            return IssueSpottingResult(
-                central_theory="Challenge the lawfulness of the search and the reliability of the Crown evidence.",
-                issues=[
-                    Issue(
-                        rank=1,
-                        name="Warrantless search",
-                        legal_basis=["s 21 NZBORA", "s 30 Evidence Act 2006"],
-                        supporting_facts=["Search and seizure circumstances require scrutiny"],
-                        strength="MODERATE",
-                        disposition="PRIMARY",
-                    )
-                ],
-                recommended_sections=self.DEFAULT_SECTIONS,
-            )
+            return self._fallback_result(sheet)
 
         issues = []
         for item in response.get("issues", []):
@@ -131,13 +134,64 @@ Return JSON in this exact schema:
                     name=item.get("name", ""),
                     legal_basis=item.get("legal_basis", []),
                     supporting_facts=item.get("supporting_facts", []),
-                    strength=item.get("strength", "MODERATE"),
-                    disposition=item.get("disposition", "SECONDARY"),
+                    strength=self._valid_strength(item.get("strength", "MODERATE")),
+                    disposition=self._valid_disposition(
+                        item.get("disposition", "SECONDARY")
+                    ),
                 )
             )
 
         return IssueSpottingResult(
             central_theory=response.get("central_theory", ""),
             issues=sorted(issues, key=lambda i: i.rank),
-            recommended_sections=response.get("recommended_sections", self.DEFAULT_SECTIONS),
+            recommended_sections=response.get(
+                "recommended_sections", self.DEFAULT_SECTIONS
+            ),
         )
+
+    def _fallback_result(self, sheet: FactSheet) -> IssueSpottingResult:
+        supporting_facts = self._extract_supporting_facts(sheet)
+        return IssueSpottingResult(
+            central_theory="Challenge the lawfulness of the search and the reliability of the Crown evidence.",
+            issues=[
+                Issue(
+                    rank=1,
+                    name="Warrantless search",
+                    legal_basis=["s 21 NZBORA", "s 30 Evidence Act 2006"],
+                    supporting_facts=supporting_facts
+                    or ["Search and seizure circumstances require scrutiny"],
+                    strength="MODERATE",
+                    disposition="PRIMARY",
+                )
+            ],
+            recommended_sections=self.DEFAULT_SECTIONS,
+        )
+
+    def _extract_supporting_facts(self, sheet: FactSheet) -> List[str]:
+        facts: List[str] = []
+        for event in sheet.timeline:
+            if event.event:
+                facts.append(f"{event.datetime}: {event.event} ({event.source})")
+        for admission in sheet.admissions:
+            if admission.alleged_words:
+                facts.append(
+                    f"Admission: {admission.alleged_words} (signed={admission.signed}, lawyer_present={admission.lawyer_present})"
+                )
+        for warrant in sheet.warrants:
+            if warrant.items_not_found:
+                facts.append(
+                    f"Warrant {warrant.number}: items not found — {', '.join(warrant.items_not_found)}"
+                )
+        for gap in sheet.gaps:
+            facts.append(f"Gap: {gap}")
+        return facts
+
+    def _valid_strength(self, value: Any) -> str:
+        if isinstance(value, str) and value.upper() in self.VALID_STRENGTHS:
+            return value.upper()
+        return "MODERATE"
+
+    def _valid_disposition(self, value: Any) -> str:
+        if isinstance(value, str) and value.upper() in self.VALID_DISPOSITIONS:
+            return value.upper()
+        return "SECONDARY"

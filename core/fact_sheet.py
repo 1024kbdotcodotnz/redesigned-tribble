@@ -46,6 +46,7 @@ class Warrant:
     place: str = ""
     items_seized: List[str] = field(default_factory=list)
     items_not_found: List[str] = field(default_factory=list)
+    source: str = ""
 
 
 @dataclass

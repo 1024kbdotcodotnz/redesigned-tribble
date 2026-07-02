@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Dict, List
 
 from core.fact_sheet import (
     Admission,
@@ -8,7 +8,6 @@ from core.fact_sheet import (
     FactSheet,
     ForensicItem,
     OfficerFacts,
-    Quote,
     SeizedItem,
     TimelineEvent,
     Warrant,
@@ -63,13 +62,99 @@ class FactSheetBuilder:
         return raw_text[:pos].count("\n") + 1
 
     def _extract_warrants(self, text: str, source_name: str) -> List[Warrant]:
-        warrants = []
-        # Find warrant blocks by number pattern SW\d+
+        warrants: List[Warrant] = []
+
+        # Warrant documents begin with a Section 6 reference. Use those anchors
+        # to carve out sections, then collect every SW number inside the
+        # section. This avoids matching bare numbers in file/page headers while
+        # still merging scope across repeated page-header occurrences.
+        section_markers = list(
+            re.finditer(
+                r"Section 6 of the Search and Surveillance Act",
+                text,
+                re.IGNORECASE,
+            )
+        )
+        if not section_markers:
+            return self._extract_warrants_by_keyword(text, source_name)
+
+        section_starts = [max(0, m.start() - 200) for m in section_markers]
+        section_ends = section_starts[1:] + [len(text)]
+
+        for sec_start, sec_end in zip(section_starts, section_ends):
+            section = text[sec_start:sec_end]
+            by_number: Dict[str, Warrant] = {}
+            for m in re.finditer(r"(SW\d+)", section):
+                number = m.group(1)
+                actual_pos = sec_start + m.start()
+                block_start = max(sec_start, actual_pos - 500)
+                block_end = min(sec_end, actual_pos + 1500)
+                block = text[block_start:block_end]
+                line = self._line_for(text, actual_pos)
+
+                offence = ""
+                offence_m = re.search(
+                    r"offence of\s*[:]?\s*([^\n]+(?:\n[^\n]{0,200})?)",
+                    block,
+                    re.IGNORECASE,
+                )
+                if offence_m:
+                    offence = re.sub(r"\s+", " ", offence_m.group(1)).strip()
+
+                scope = []
+                for bullet in re.finditer(r"^\s*[-•*]\s*(.+)$", block, re.MULTILINE):
+                    scope.append(bullet.group(1).strip())
+
+                place = ""
+                place_m = re.search(
+                    r"(?:search|warrant to search)\s+a\s+(?:place|vehicle|address)[,\s]+([^\n]+)",
+                    block,
+                    re.IGNORECASE,
+                )
+                if place_m:
+                    place = place_m.group(1).strip()
+
+                new_warrant = Warrant(
+                    number=number,
+                    offence_authorised=offence,
+                    scope=scope,
+                    place=place,
+                    source=f"{source_name}:{line}",
+                )
+
+                existing = by_number.get(number)
+                if existing is None:
+                    by_number[number] = new_warrant
+                else:
+                    if not existing.offence_authorised:
+                        existing.offence_authorised = new_warrant.offence_authorised
+                    seen = set(existing.scope)
+                    existing.scope.extend(
+                        [s for s in new_warrant.scope if s not in seen]
+                    )
+                    if not existing.place:
+                        existing.place = new_warrant.place
+
+            warrants.extend(by_number.values())
+
+        return warrants
+
+    def _extract_warrants_by_keyword(
+        self, text: str, source_name: str
+    ) -> List[Warrant]:
+        """Fallback when no explicit Section 6 markers are present."""
+        warrants: List[Warrant] = []
         for m in re.finditer(r"(SW\d+)", text):
             number = m.group(1)
             start = max(0, m.start() - 500)
             end = min(len(text), m.end() + 1500)
             block = text[start:end]
+
+            # The number must appear near a warrant keyword.
+            window = text[max(0, m.start() - 300) : min(len(text), m.end() + 300)]
+            if not re.search(r"\bwarrant\b|section\s+6", window, re.IGNORECASE):
+                continue
+
             line = self._line_for(text, m.start())
 
             offence = ""
@@ -100,6 +185,7 @@ class FactSheetBuilder:
                     offence_authorised=offence,
                     scope=scope,
                     place=place,
+                    source=f"{source_name}:{line}",
                 )
             )
 
@@ -154,25 +240,25 @@ class FactSheetBuilder:
 
     def _extract_admissions(self, text: str, source_name: str) -> List[Admission]:
         admissions = []
-        # Look for admission phrases in officer notebook extracts
-        for m in re.finditer(
-            r"((?:admitted|admission|confessed|declined to comment|refused to sign)[^\n]{0,500})",
-            text,
-            re.IGNORECASE,
-        ):
-            snippet = m.group(1).strip()
+        # Look for admission phrases in officer notebook extracts. Keep the
+        # inference of `signed` and `lawyer_present` within the same sentence
+        # (or logical line) as the admission phrase, rather than a long snippet.
+        admission_terms = r"admitted|admission|confessed|declined to comment|refused to sign"
+        for m in re.finditer(rf"([^\.\n]*(?:{admission_terms})[^\.\n]*)", text, re.IGNORECASE):
+            sentence = m.group(1).strip()
             line = self._line_for(text, m.start())
+            sent_lower = sentence.lower()
             signed = None
-            if "refused to sign" in snippet.lower():
+            if "refused to sign" in sent_lower:
                 signed = False
-            elif "signed" in snippet.lower() and "refused" not in snippet.lower():
+            elif "signed" in sent_lower and "refused" not in sent_lower:
                 signed = True
             lawyer = None
-            if "lawyer" in snippet.lower():
+            if "lawyer" in sent_lower:
                 lawyer = True
             admissions.append(
                 Admission(
-                    alleged_words=snippet,
+                    alleged_words=sentence,
                     signed=signed,
                     lawyer_present=lawyer,
                     source=f"{source_name}:{line}",
@@ -227,7 +313,7 @@ class FactSheetBuilder:
     def _extract_gaps(self, text: str, source_name: str) -> List[str]:
         gaps = []
         if "body" in text.lower() and "camera" in text.lower():
-            gaps.append("Body-worn camera footage mentioned or requested")
+            gaps.append(f"{source_name}: Body-worn camera footage mentioned or requested")
         if "custody" in text.lower() and "record" in text.lower():
-            gaps.append("Chain-of-custody records")
+            gaps.append(f"{source_name}: Chain-of-custody records")
         return gaps

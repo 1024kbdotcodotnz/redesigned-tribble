@@ -156,19 +156,20 @@ class AgentSwarm:
         fact_sheet = self.fact_sheet_builder.build(parsed, raw_text, source_name="disclosure.txt")
         print(f"[AGENT_SWARM] fact_sheet warrants={len(fact_sheet.warrants)} officers={list(fact_sheet.officers.keys())} admissions={len(fact_sheet.admissions)}")
 
-        # Spot the strongest defence theory
+        # Agent 2: QueryGen (1 LLM call)
+        queries = self._run_querygen(parsed)
+
+        # RAG Retrieval
+        rag_results, source_results = self._run_rag_retrieval(queries, extra_collections=extra_collections)
+
+        # Spot the strongest defence theory using retrieved legal sources
+        legal_sources = rag_results.split("\n\n") if rag_results else []
         issue_result = self.issue_spotter.spot(
             fact_sheet,
             primary_charge=parsed_dict.get("primary_charge") or {},
-            legal_sources=[],
+            legal_sources=legal_sources,
         )
         print(f"[AGENT_SWARM] central_theory={issue_result.central_theory}")
-
-        # Agent 2: QueryGen (1 LLM call)
-        queries = self._run_querygen(parsed)
-        
-        # RAG Retrieval
-        rag_results, source_results = self._run_rag_retrieval(queries, extra_collections=extra_collections)
         
         # Extract only the charge-relevant text before sending to the LLMs. Full
         # disclosures often contain long background investigations (burglary,
@@ -234,22 +235,22 @@ class AgentSwarm:
         # Lightweight verification pass: flag unsupported factual claims and
         # paragraphs that lack explicit disclosure anchors.
         orchestrator_markdown = "\n\n".join([
-            report.title_block,
-            report.executive_summary,
-            report.charge_and_legislative_framework,
-            report.summary_of_evidence,
-            report.assessment_of_prosecution_case,
-            report.evidence_analysis,
-            report.elements_of_the_offence,
-            report.defence_strategies,
-            report.cross_examination_priorities,
-            report.disclosure_and_forensic_gaps,
-            report.instructions_to_counsel_pre_trial,
-            report.pre_trial_instructions_for_lawyer,
-            report.evidentiary_issues_to_raise,
-            report.conclusion,
-            report.conclusion_and_risk_assessment,
-            report.disclaimer,
+            str(report.title_block or ""),
+            str(report.executive_summary or ""),
+            str(report.charge_and_legislative_framework or ""),
+            str(report.summary_of_evidence or ""),
+            str(report.assessment_of_prosecution_case or ""),
+            str(report.evidence_analysis or ""),
+            str(report.elements_of_the_offence or ""),
+            str(report.defence_strategies or ""),
+            str(report.cross_examination_priorities or ""),
+            str(report.disclosure_and_forensic_gaps or ""),
+            str(report.instructions_to_counsel_pre_trial or ""),
+            str(report.pre_trial_instructions_for_lawyer or ""),
+            str(report.evidentiary_issues_to_raise or ""),
+            str(report.conclusion or ""),
+            str(report.conclusion_and_risk_assessment or ""),
+            str(report.disclaimer or ""),
         ])
         verifier = ReportVerifier()
         verified_markdown = verifier.verify(orchestrator_markdown, fact_sheet)
@@ -1093,7 +1094,7 @@ class AgentSwarm:
                 report.elements_of_the_offence, offense_lower
             )
 
-        # 8. Ensure defence strategies are cleanly labelled A., B., C.
+        # 8. Ensure defence strategies are cleanly numbered 1., 2., 3.
         if report.defence_strategies:
             report.defence_strategies = self._relabel_defence_strategies(report.defence_strategies)
 
@@ -1133,18 +1134,39 @@ class AgentSwarm:
                 flags=re.IGNORECASE | re.MULTILINE,
             )
 
-        # 11. Ensure Weaknesses under Assessment is a numbered list
+        # 11. Ensure Strengths and Weaknesses under Assessment are numbered lists
         if report.assessment_of_prosecution_case:
-            # Normalise a bare "Weaknesses" heading to a markdown subheading
+            # Normalise bare headings to markdown subheadings
+            report.assessment_of_prosecution_case = re.sub(
+                r"(?im)^\s*Strengths\s*$",
+                "## Strengths",
+                report.assessment_of_prosecution_case,
+            )
             report.assessment_of_prosecution_case = re.sub(
                 r"(?im)^\s*Weaknesses\s*$",
                 "## Weaknesses",
                 report.assessment_of_prosecution_case,
             )
+
+            # Normalise Strengths list first (stop at Weaknesses if present)
+            if "## Strengths" in report.assessment_of_prosecution_case:
+                parts = report.assessment_of_prosecution_case.split("## Strengths", 1)
+                before = parts[0]
+                rest = parts[1].lstrip("\n")
+                if "## Weaknesses" in rest:
+                    strengths_content, weaknesses_rest = rest.split("## Weaknesses", 1)
+                    strengths_content = self._number_weaknesses(strengths_content)
+                    report.assessment_of_prosecution_case = (
+                        before + "## Strengths\n\n" + strengths_content + "\n\n## Weaknesses" + weaknesses_rest
+                    )
+                else:
+                    rest = self._number_weaknesses(rest)
+                    report.assessment_of_prosecution_case = before + "## Strengths\n\n" + rest
+
             if "## Weaknesses" in report.assessment_of_prosecution_case:
                 parts = report.assessment_of_prosecution_case.split("## Weaknesses", 1)
                 before = parts[0]
-                after = parts[1]
+                after = parts[1].lstrip("\n")
                 # Drop Rights-KC-style summary paragraphs
                 after = re.sub(
                     r"\n\s*No significant breaches were identified[^\n]*(?:exclusion|stay|sentence reduction)[^\n]*",
@@ -1152,41 +1174,67 @@ class AgentSwarm:
                     after,
                     flags=re.IGNORECASE,
                 )
-                non_empty_lines = [l for l in after.splitlines() if l.strip()]
-                if non_empty_lines and not re.match(r"^\s*\d+\.\s+", non_empty_lines[0]):
-                    after = self._number_weaknesses(after)
+                # Always normalise Weaknesses to a continuous numbered list so the
+                # model cannot mix bullets and numbers.
+                after = self._number_weaknesses(after)
                 report.assessment_of_prosecution_case = before + "## Weaknesses\n\n" + after
 
     def _number_weaknesses(self, text: str) -> str:
-        """Convert bullet/paragraph weaknesses into a clean numbered list."""
-        paragraphs = re.split(r"\n{2,}", text.strip())
-        numbered = []
-        count = 1
-        for para in paragraphs:
-            para = para.strip()
-            if not para:
-                continue
-            lines = para.splitlines()
-            first = lines[0].strip()
-
-            # Already numbered
-            if re.match(r"^\d+\.\s+", first):
-                numbered.append(para)
+        """Convert any bullet/paragraph weaknesses into a continuous numbered list."""
+        lines = text.splitlines()
+        result = []
+        count = 0
+        i = 0
+        while i < len(lines):
+            raw = lines[i]
+            line = raw.strip()
+            if not line:
+                result.append(raw)
+                i += 1
                 continue
 
-            # Bullet start
-            if re.match(r"^[-•*]\s+", first):
-                first = re.sub(r"^[-•*]\s+", "", first)
-                para = first + "\n" + "\n".join(lines[1:])
+            # Already numbered — keep its number and update the running count.
+            numbered_match = re.match(r"^(\d+)\.\s+(.*)", line)
+            if numbered_match:
+                count = int(numbered_match.group(1))
+                result.append(raw)
+                i += 1
+                continue
 
-            # Bold heading like **Chain of Custody Issues:**
-            if re.match(r"^\*\*[^*]+\*\*", first):
-                # Keep the bold heading as part of the numbered item
-                pass
+            # Bullet item — assign the next number and collect any continuation lines.
+            bullet_match = re.match(r"^[-•*]\s+(.*)", line)
+            if bullet_match:
+                count += 1
+                content = bullet_match.group(1)
+                j = i + 1
+                while (
+                    j < len(lines)
+                    and lines[j].strip()
+                    and not re.match(r"^[-•*]\s+", lines[j].strip())
+                    and not re.match(r"^\d+\.\s+", lines[j].strip())
+                ):
+                    content += " " + lines[j].strip()
+                    j += 1
+                result.append(f"{count}. {content}")
+                i = j
+                continue
 
-            numbered.append(f"{count}. {para}")
+            # Plain paragraph — assign the next number and collect continuation lines.
             count += 1
-        return "\n\n".join(numbered)
+            content = line
+            j = i + 1
+            while (
+                j < len(lines)
+                and lines[j].strip()
+                and not re.match(r"^[-•*]\s+", lines[j].strip())
+                and not re.match(r"^\d+\.\s+", lines[j].strip())
+            ):
+                content += " " + lines[j].strip()
+                j += 1
+            result.append(f"{count}. {content}")
+            i = j
+
+        return "\n".join(result)
 
     def _expected_element_1(self, offense_lower: str = "") -> str:
         """Return the correct first element heading for the offence type."""
@@ -1305,105 +1353,95 @@ class AgentSwarm:
         return "\n\n".join(police_blocks)
 
     def _relabel_defence_strategies(self, text: str) -> str:
-        """Relabel defence strategies as A., B., C. cleanly.
+        """Clean and renumber defence strategies sequentially as 1., 2., 3.
 
-        Strips any existing stray letter labels, merges duplicate Strategy Name
-        lines, and re-applies sequential A., B., C. labels.
+        Strips legacy "Strategy Name:", stray letter/number labels, section
+        titles, and bare strength ratings, then emits a consistent numbered list.
         """
         if not text or not text.strip():
             return text
 
         lines = text.splitlines()
 
-        # First pass: normalise letter labels into Strategy Name lines
-        cleaned = []
-        i = 0
-        while i < len(lines):
-            line = lines[i]
+        # First pass: strip labels, normalise bullets, drop section titles and
+        # bare strength ratings that appear before any real strategy.
+        cleaned: List[str] = []
+        for line in lines:
             stripped = line.strip()
-            # Bare letter label — drop it
-            if re.match(r"^[A-H]\.\s*$", stripped):
-                i += 1
+            if not stripped:
+                cleaned.append(line)
                 continue
-            # "A. Strategy Name: Foo" -> "Strategy Name: Foo"
-            m = re.match(r"^[A-H]\.\s+(Strategy\s*Name\s*:.*)$", stripped, re.IGNORECASE)
-            if m:
-                cleaned.append(m.group(1))
-                i += 1
+            # Drop section-title lines.
+            if re.match(r"^Defence\s+Strategies(\s+and\s+Options)?\s*[A-H]?\.?$", stripped, re.IGNORECASE):
                 continue
-            # "A. Foo bar" -> "Strategy Name: Foo bar"
-            if re.match(r"^[A-H]\.\s+", stripped):
-                heading = re.sub(r"^[A-H]\.\s+", "", stripped)
-                cleaned.append(f"Strategy Name: {heading}")
-                i += 1
+            # Drop bare strength ratings that have no strategy context yet.
+            if re.match(r"^(STRONG|MODERATE|WEAK)$", stripped, re.IGNORECASE) and not cleaned:
                 continue
-            cleaned.append(line)
-            i += 1
-
-        # Merge consecutive Strategy Name lines (allowing blank lines between
-        # them): keep the last one, which is usually the descriptive heading.
-        merged = []
-        i = 0
-        while i < len(cleaned):
-            line = cleaned[i]
-            stripped = line.strip()
+            # Drop "Strategy Name:" prefix.
             if re.match(r"^Strategy\s*Name\s*:", stripped, re.IGNORECASE):
-                last = line
-                j = i + 1
-                while j < len(cleaned) and not cleaned[j].strip():
-                    j += 1
-                while j < len(cleaned) and re.match(r"^Strategy\s*Name\s*:", cleaned[j].strip(), re.IGNORECASE):
-                    last = cleaned[j]
-                    j += 1
-                    while j < len(cleaned) and not cleaned[j].strip():
-                        j += 1
-                merged.append(last)
-                i = j
-            else:
-                merged.append(line)
-                i += 1
-        cleaned = merged
+                line = re.sub(r"^Strategy\s*Name\s*:\s*", "", line, flags=re.IGNORECASE)
+                stripped = line.strip()
+            # Strip leading letter labels from headings (keep bullets intact).
+            if re.match(r"^[A-H]\.\s+", stripped) and not re.match(r"^[-•*]\s+", stripped):
+                line = re.sub(r"^[A-H]\.\s+", "", line)
+                stripped = line.strip()
+            # Strip leading number labels from headings (keep bullets intact).
+            if re.match(r"^\d+\.\s+", stripped) and not re.match(r"^[-•*]\s+", stripped):
+                line = re.sub(r"^\d+\.\s+", "", line)
+                stripped = line.strip()
+            # Normalise bullet markers.
+            if re.match(r"^[-•*]\s+", stripped):
+                line = re.sub(r"^[-•*]\s+", "- ", line)
+            cleaned.append(line)
 
-        # Split into strategies at Strategy Name boundaries
-        strategies = []
+        # Split into paragraph blocks separated by blank lines.
+        blocks = []
         current = []
         for line in cleaned:
-            stripped = line.strip()
-            if re.match(r"^Strategy\s*Name\s*:", stripped, re.IGNORECASE):
-                if current:
-                    strategies.append(current)
-                current = [line]
-            else:
+            if line.strip():
                 current.append(line)
+            else:
+                if current:
+                    blocks.append(current)
+                    current = []
         if current:
-            strategies.append(current)
+            blocks.append(current)
 
-        # Emit with sequential labels
-        labels = ["A.", "B.", "C.", "D.", "E.", "F.", "G.", "H."]
-        out = []
-        label_idx = 0
-        for strat in strategies:
-            if label_idx >= len(labels):
-                break
-            # Trim leading/trailing blank lines
-            while strat and not strat[0].strip():
-                strat.pop(0)
-            while strat and not strat[-1].strip():
-                strat.pop()
-            if not strat:
+        # Identify strategy blocks. A block is a strategy if it starts with a
+        # heading (not a bullet and not a Strength line). Bullets and Strength
+        # lines attach to the previous strategy.
+        strategies: List[List[str]] = []
+        for block in blocks:
+            first = block[0].strip()
+            is_bullet = first.startswith("- ")
+            is_strength = bool(re.match(r"^Strength\s*:", first, re.IGNORECASE))
+
+            if is_strength or is_bullet:
+                if strategies:
+                    strategies[-1].extend(block)
                 continue
 
-            first = strat[0].strip()
-            if not re.match(r"^Strategy\s*Name\s*:", first, re.IGNORECASE):
-                strat[0] = f"Strategy Name: {first}"
-            # Remove any stray letter prefix
-            strat[0] = re.sub(r"^[A-H]\.\s*", "", strat[0])
+            strategies.append(block)
 
-            out.append(labels[label_idx])
-            out.extend(strat)
-            label_idx += 1
+        # Emit clean numbered strategies.
+        out: List[str] = []
+        for idx, strat in enumerate(strategies, start=1):
+            strat = [l for l in strat if l.strip()]
+            if not strat:
+                continue
+            name = strat[0].strip()
+            rest = strat[1:]
 
-        return "\n".join(out)
+            # Separate Strength line(s) and keep only the last one at the end.
+            strength_lines = [l for l in rest if re.match(r"^Strength\s*:", l.strip(), re.IGNORECASE)]
+            body = [l for l in rest if not re.match(r"^Strength\s*:", l.strip(), re.IGNORECASE)]
+
+            out.append(f"{idx}. {name}")
+            out.extend(body)
+            if strength_lines:
+                out.append(strength_lines[-1])
+
+        return "\n\n".join(out)
 
     def _extract_markdown_sections(self, text: str) -> Dict[str, str]:
         """Extract sections from markdown with nested # handling."""

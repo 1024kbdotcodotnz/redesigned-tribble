@@ -1,5 +1,5 @@
 import re
-from typing import List, Set
+from typing import Set
 
 from core.fact_sheet import FactSheet
 

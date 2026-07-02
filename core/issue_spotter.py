@@ -128,9 +128,13 @@ Return JSON in this exact schema:
 
         issues = []
         for item in response.get("issues", []):
+            try:
+                rank = int(item.get("rank", 99))
+            except (TypeError, ValueError):
+                rank = 99
             issues.append(
                 Issue(
-                    rank=int(item.get("rank", 99)),
+                    rank=rank,
                     name=item.get("name", ""),
                     legal_basis=item.get("legal_basis", []),
                     supporting_facts=item.get("supporting_facts", []),
@@ -145,7 +149,7 @@ Return JSON in this exact schema:
             central_theory=response.get("central_theory", ""),
             issues=sorted(issues, key=lambda i: i.rank),
             recommended_sections=response.get(
-                "recommended_sections", self.DEFAULT_SECTIONS
+                "recommended_sections", list(self.DEFAULT_SECTIONS)
             ),
         )
 
@@ -164,7 +168,7 @@ Return JSON in this exact schema:
                     disposition="PRIMARY",
                 )
             ],
-            recommended_sections=self.DEFAULT_SECTIONS,
+            recommended_sections=list(self.DEFAULT_SECTIONS),
         )
 
     def _extract_supporting_facts(self, sheet: FactSheet) -> List[str]:

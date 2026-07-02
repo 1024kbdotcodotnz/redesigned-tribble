@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 
 from core.prompts import PROMPTS
 from core.parser import DisclosureParser, ParsedDisclosure
+from core.fact_sheet_builder import FactSheetBuilder
 
 
 def ollama_unload_model(model: str, host: str = "http://localhost:11434") -> None:
@@ -131,6 +132,9 @@ class AgentSwarm:
         self.llm_client = llm_client or OllamaLLMClient()
         self.rag_engine = rag_engine
         self.parser = DisclosureParser(llm_client=self.llm_client)
+        self.fact_sheet_builder = FactSheetBuilder()
+        from core.issue_spotter import IssueSpotter
+        self.issue_spotter = IssueSpotter(llm_client=self.llm_client)
         self._last_audit: Optional[Any] = None
     
     def analyse(self, raw_text: str, extra_collections: Optional[List[str]] = None) -> SynthesizedReport:
@@ -146,7 +150,19 @@ class AgentSwarm:
         # Agent 1: Parser (fast, no LLM)
         parsed = self.parser.parse(raw_text)
         parsed_dict = self.parser.to_dict(parsed)
-        
+
+        # Build anchored fact sheet
+        fact_sheet = self.fact_sheet_builder.build(parsed, raw_text, source_name="disclosure.txt")
+        print(f"[AGENT_SWARM] fact_sheet warrants={len(fact_sheet.warrants)} officers={list(fact_sheet.officers.keys())} admissions={len(fact_sheet.admissions)}")
+
+        # Spot the strongest defence theory
+        issue_result = self.issue_spotter.spot(
+            fact_sheet,
+            primary_charge=parsed_dict.get("primary_charge") or {},
+            legal_sources=[],
+        )
+        print(f"[AGENT_SWARM] central_theory={issue_result.central_theory}")
+
         # Agent 2: QueryGen (1 LLM call)
         queries = self._run_querygen(parsed)
         
@@ -182,12 +198,12 @@ class AgentSwarm:
         # Agents 3-8: Run six KCs in parallel, but throttle to 2 concurrent
         # calls to avoid exhausting the RTX 3090's VRAM.
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            strat_future = executor.submit(self._run_strategist, parsed_dict, rag_results, raw_text_for_prompt)
-            evid_future = executor.submit(self._run_evidential, parsed_dict, rag_results, raw_text_for_prompt)
-            rights_future = executor.submit(self._run_rights, parsed_dict, rag_results, raw_text_for_prompt)
-            admissions_future = executor.submit(self._run_admissions, parsed_dict, rag_results, raw_text_for_prompt)
-            cross_exam_future = executor.submit(self._run_cross_exam, parsed_dict, rag_results, raw_text_for_prompt)
-            disclosure_forensic_future = executor.submit(self._run_disclosure_forensic, parsed_dict, rag_results, raw_text_for_prompt)
+            strat_future = executor.submit(self._run_strategist, parsed_dict, rag_results, raw_text_for_prompt, fact_sheet, issue_result)
+            evid_future = executor.submit(self._run_evidential, parsed_dict, rag_results, raw_text_for_prompt, fact_sheet, issue_result)
+            rights_future = executor.submit(self._run_rights, parsed_dict, rag_results, raw_text_for_prompt, fact_sheet, issue_result)
+            admissions_future = executor.submit(self._run_admissions, parsed_dict, rag_results, raw_text_for_prompt, fact_sheet, issue_result)
+            cross_exam_future = executor.submit(self._run_cross_exam, parsed_dict, rag_results, raw_text_for_prompt, fact_sheet, issue_result)
+            disclosure_forensic_future = executor.submit(self._run_disclosure_forensic, parsed_dict, rag_results, raw_text_for_prompt, fact_sheet, issue_result)
 
             strategist_output = strat_future.result()
             evidential_output = evid_future.result()
@@ -202,7 +218,7 @@ class AgentSwarm:
         report = self._run_orchestrator(
             strategist_output, evidential_output, rights_output,
             admissions_output, cross_exam_output, disclosure_forensic_output,
-            raw_text_for_prompt, primary_charge
+            raw_text_for_prompt, primary_charge, fact_sheet, issue_result
         )
 
         # Fallback: if the Orchestrator left sections empty or wrote the
@@ -471,43 +487,43 @@ class AgentSwarm:
         
         return "\n\n".join(formatted_parts) if formatted_parts else "[No RAG results retrieved]", all_results
     
-    def _run_strategist(self, parsed_dict: Dict, rag_results: str, raw_text: str = "") -> str:
-        prompt = PROMPTS["strategist_user"](parsed_dict, rag_results, raw_text=raw_text)
+    def _run_strategist(self, parsed_dict: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+        prompt = PROMPTS["strategist_user"](parsed_dict, rag_results, raw_text=raw_text, fact_sheet=fact_sheet, issue_result=issue_result)
         system = PROMPTS["strategist_system"]
         return self.llm_client.generate(prompt, system, temperature=0.1, max_tokens=4000)
 
-    def _run_evidential(self, parsed_dict: Dict, rag_results: str, raw_text: str = "") -> str:
-        prompt = PROMPTS["evidential_user"](parsed_dict, rag_results, raw_text=raw_text)
+    def _run_evidential(self, parsed_dict: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+        prompt = PROMPTS["evidential_user"](parsed_dict, rag_results, raw_text=raw_text, fact_sheet=fact_sheet, issue_result=issue_result)
         system = PROMPTS["evidential_system"]
         return self.llm_client.generate(prompt, system, temperature=0.1, max_tokens=4000)
 
-    def _run_rights(self, parsed_dict: Dict, rag_results: str, raw_text: str = "") -> str:
-        prompt = PROMPTS["rights_user"](parsed_dict, rag_results, raw_text=raw_text)
+    def _run_rights(self, parsed_dict: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+        prompt = PROMPTS["rights_user"](parsed_dict, rag_results, raw_text=raw_text, fact_sheet=fact_sheet, issue_result=issue_result)
         system = PROMPTS["rights_system"]
         return self.llm_client.generate(prompt, system, temperature=0.1, max_tokens=4000)
 
-    def _run_admissions(self, parsed_dict: Dict, rag_results: str, raw_text: str = "") -> str:
-        prompt = PROMPTS["admissions_user"](parsed_dict, rag_results, raw_text=raw_text)
+    def _run_admissions(self, parsed_dict: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+        prompt = PROMPTS["admissions_user"](parsed_dict, rag_results, raw_text=raw_text, fact_sheet=fact_sheet, issue_result=issue_result)
         system = PROMPTS["admissions_system"]
         return self.llm_client.generate(prompt, system, temperature=0.1, max_tokens=4000)
 
-    def _run_cross_exam(self, parsed_dict: Dict, rag_results: str, raw_text: str = "") -> str:
-        prompt = PROMPTS["cross_exam_user"](parsed_dict, rag_results, raw_text=raw_text)
+    def _run_cross_exam(self, parsed_dict: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+        prompt = PROMPTS["cross_exam_user"](parsed_dict, rag_results, raw_text=raw_text, fact_sheet=fact_sheet, issue_result=issue_result)
         system = PROMPTS["cross_exam_system"]
         return self.llm_client.generate(prompt, system, temperature=0.1, max_tokens=4000)
 
-    def _run_disclosure_forensic(self, parsed_dict: Dict, rag_results: str, raw_text: str = "") -> str:
-        prompt = PROMPTS["disclosure_forensic_user"](parsed_dict, rag_results, raw_text=raw_text)
+    def _run_disclosure_forensic(self, parsed_dict: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+        prompt = PROMPTS["disclosure_forensic_user"](parsed_dict, rag_results, raw_text=raw_text, fact_sheet=fact_sheet, issue_result=issue_result)
         system = PROMPTS["disclosure_forensic_system"]
         return self.llm_client.generate(prompt, system, temperature=0.1, max_tokens=4000)
 
     def _run_orchestrator(self, strategist: str, evidential: str, rights: str,
                           admissions: str, cross_exam: str, disclosure_forensic: str,
-                          raw_text: str = "", primary_charge: Optional[Dict] = None) -> SynthesizedReport:
+                          raw_text: str = "", primary_charge: Optional[Dict] = None, fact_sheet=None, issue_result=None) -> SynthesizedReport:
         prompt = PROMPTS["orchestrator_user"](
             strategist, evidential, rights,
             admissions, cross_exam, disclosure_forensic,
-            raw_text=raw_text, primary_charge=primary_charge
+            raw_text=raw_text, primary_charge=primary_charge, fact_sheet=fact_sheet, issue_result=issue_result
         )
         system = PROMPTS["orchestrator_system"]
 

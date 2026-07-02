@@ -5,7 +5,29 @@ Production-grade prompts for the 6-agent multi-KC pipeline.
 Each prompt is tuned for deepseek-r1:14b with NZ criminal law context.
 """
 
-from typing import Dict, Optional
+import json
+from typing import Any, Dict, List, Optional
+
+
+def _theory_preamble(fact_sheet: Any, issue_result: Any) -> str:
+    return f"""
+## CASE THEORY
+{issue_result.central_theory}
+
+## RANKED ISSUES
+{json.dumps([{"rank": i.rank, "name": i.name, "strength": i.strength, "disposition": i.disposition} for i in issue_result.issues], indent=2)}
+
+## FACT SHEET
+{json.dumps(fact_sheet.to_dict(), indent=2)}
+
+## INSTRUCTIONS
+- Write your section as ammunition for the CASE THEORY above.
+- Every factual claim must be anchored to a source in the FACT SHEET.
+- Do not invent facts, cases, or statutes.
+- Cite New Zealand authorities where relevant.
+- For cross-examination, use the officer-specific facts and quotes.
+"""
+
 
 # ─── System Prompts ─────────────────────────────────────────────────────────
 
@@ -258,9 +280,10 @@ def _format_primary_charge(parsed_disclosure: Dict) -> str:
     return "\n".join(lines)
 
 
-def strategist_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "") -> str:
+def strategist_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+    preamble = _theory_preamble(fact_sheet, issue_result) if fact_sheet and issue_result else ""
     primary_charge_text = _format_primary_charge(parsed_disclosure)
-    return f"""Analyse the following charges from a New Zealand criminal defence perspective.
+    return f"{preamble}\n\n" + f"""Analyse the following charges from a New Zealand criminal defence perspective.
 
 RETRIEVED LEGAL AUTHORITY (use only for legal principles, not for facts):
 {rag_results}
@@ -326,9 +349,10 @@ CRITICAL INSTRUCTIONS (READ LAST):
 - Be critical of police decisions where warranted."""
 
 
-def evidential_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "") -> str:
+def evidential_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+    preamble = _theory_preamble(fact_sheet, issue_result) if fact_sheet and issue_result else ""
     primary_charge_text = _format_primary_charge(parsed_disclosure)
-    return f"""Critically assess the evidence in this New Zealand criminal case.
+    return f"{preamble}\n\n" + f"""Critically assess the evidence in this New Zealand criminal case.
 
 RETRIEVED LEGAL AUTHORITY (use only for legal principles, not for facts):
 {rag_results}
@@ -400,9 +424,10 @@ CRITICAL INSTRUCTIONS (READ LAST):
 - Never invent legal authority."""
 
 
-def rights_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "") -> str:
+def rights_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+    preamble = _theory_preamble(fact_sheet, issue_result) if fact_sheet and issue_result else ""
     primary_charge_text = _format_primary_charge(parsed_disclosure)
-    return f"""Assess police conduct and rights compliance in this New Zealand criminal case.
+    return f"{preamble}\n\n" + f"""Assess police conduct and rights compliance in this New Zealand criminal case.
 
 RETRIEVED LEGAL AUTHORITY (use only for legal principles, not for facts):
 {rag_results}
@@ -530,9 +555,10 @@ Rules:
 - Never invent legal authority."""
 
 
-def admissions_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "") -> str:
+def admissions_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+    preamble = _theory_preamble(fact_sheet, issue_result) if fact_sheet and issue_result else ""
     primary_charge_text = _format_primary_charge(parsed_disclosure)
-    return f"""Forensically examine any alleged admission or statement by the defendant in this New Zealand criminal case.
+    return f"{preamble}\n\n" + f"""Forensically examine any alleged admission or statement by the defendant in this New Zealand criminal case.
 
 RETRIEVED LEGAL AUTHORITY (use only for legal principles, not for facts):
 {rag_results}
@@ -582,9 +608,10 @@ CRITICAL INSTRUCTIONS (READ LAST):
 - Never invent legal authority."""
 
 
-def cross_exam_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "") -> str:
+def cross_exam_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+    preamble = _theory_preamble(fact_sheet, issue_result) if fact_sheet and issue_result else ""
     primary_charge_text = _format_primary_charge(parsed_disclosure)
-    return f"""Prepare cross-examination lines for each named witness in this New Zealand criminal case.
+    return f"{preamble}\n\n" + f"""Prepare cross-examination lines for each named witness in this New Zealand criminal case.
 
 RETRIEVED LEGAL AUTHORITY (use only for legal principles, not for facts):
 {rag_results}
@@ -618,9 +645,10 @@ CRITICAL INSTRUCTIONS (READ LAST):
 - Never invent legal authority."""
 
 
-def disclosure_forensic_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "") -> str:
+def disclosure_forensic_prompt(parsed_disclosure: Dict, rag_results: str, raw_text: str = "", fact_sheet=None, issue_result=None) -> str:
+    preamble = _theory_preamble(fact_sheet, issue_result) if fact_sheet and issue_result else ""
     primary_charge_text = _format_primary_charge(parsed_disclosure)
-    return f"""Identify disclosure gaps and forensic/physical evidence issues in this New Zealand criminal case.
+    return f"{preamble}\n\n" + f"""Identify disclosure gaps and forensic/physical evidence issues in this New Zealand criminal case.
 
 RETRIEVED LEGAL AUTHORITY (use only for legal principles, not for facts):
 {rag_results}
@@ -666,10 +694,11 @@ CRITICAL INSTRUCTIONS (READ LAST):
 
 def orchestrator_prompt(strategist_output: str, evidential_output: str, rights_output: str,
                         admissions_output: str, cross_exam_output: str, disclosure_forensic_output: str,
-                        raw_text: str = "", primary_charge: Optional[Dict] = None) -> str:
+                        raw_text: str = "", primary_charge: Optional[Dict] = None, fact_sheet=None, issue_result=None) -> str:
+    preamble = _theory_preamble(fact_sheet, issue_result) if fact_sheet and issue_result else ""
     primary_charge_text = _format_primary_charge(primary_charge or {})
     court = _extract_court(primary_charge or {}, raw_text)
-    return f"""Synthesise the following six specialist analyses into a single unified defence report.
+    return f"{preamble}\n\n" + f"""Synthesise the following six specialist analyses into a single unified defence report.
 
 STRATEGIST KC OUTPUT (fact-check against raw disclosure):
 {strategist_output}

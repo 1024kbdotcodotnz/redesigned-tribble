@@ -7,6 +7,7 @@
 The system ingests NZ legal sources (legislation, NZLII case law, Police Manual chapters) plus user-uploaded criminal-disclosure bundles, then produces structured legal-analysis reports from the perspective of senior defence counsel. All outputs carry a disclaimer that they are co-counsel assistance only, not definitive legal advice.
 
 > **Project root:** `C:/Users/megab/aegis`  
+> **Deployment target:** RunPod GPU pods under `/workspace/nz_legal_rag`.  
 > **Canonical code:** repo root. Treat `nz_legal_rag_deploy/` as an older deployment snapshot, not the source of truth.
 
 ## Technology Stack
@@ -23,7 +24,7 @@ The system ingests NZ legal sources (legislation, NZLII case law, Police Manual 
 | Report export | `python-docx`, `fpdf2>=2.7.0`, `docx2pdf>=0.1.8` | `core/report_export.py` |
 | Security | `cryptography>=41.0.0` | Fernet encryption, PBKDF2 key derivation |
 | Testing | `pytest>=8.0.0`, `pytest-asyncio>=0.23.0` | Tests live in `tests/` |
-| Deployment | Docker Compose + shell scripts | RunPod and Vultr GPU deployment scripts at repo root |
+| Deployment | Docker Compose + shell scripts | RunPod GPU deployment scripts at repo root |
 
 There is **no `pyproject.toml`, `setup.cfg`, `pytest.ini`, or `tox.ini`**. Dependencies are declared only in `requirements.txt`.
 
@@ -118,17 +119,29 @@ Or use the wrapper:
 ./start.sh                       # Uses .venv/bin/python, starts API + web, optional MCP
 ```
 
-### Docker Compose
+### RunPod deployment
+
+Scripts for deploying to RunPod GPU pods live at repo root:
+
+```bash
+# Initial setup (run on the RunPod web terminal)
+./1_setup_runpod.sh
+
+# Upload code + DB from local machine to /workspace/nz_legal_rag
+./2_upload_all.sh <runpod-ssh-host>
+
+# Open SSH tunnels for local access
+./3_connect.sh <runpod-ssh-host>
+
+# Two-way daily sync (code → pod, DB ← pod)
+./sync_daily.sh <runpod-ip>[:port]
+```
+
+### Local Docker Compose
 
 ```bash
 # Local full-GPU deployment (API mapped to host port 8080; web on 8501; Ollama on 11434)
 docker compose up -d --build
-
-# Vultr GPU deployment
-docker compose -f docker-compose.vultr.yml up -d --build
-
-# Fractional-GPU deployment
-COMPOSE_FILE=docker-compose.fractional.yml docker compose up -d --build
 ```
 
 > **Port conflict note:** In `docker-compose.yml`, both the `api` service and the `mcp` service map to host port `8080`. Review port mappings before deploying.

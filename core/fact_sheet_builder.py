@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from core.fact_sheet import (
     Admission,
@@ -229,23 +229,23 @@ class FactSheetBuilder:
 
     def _extract_officers(self, text: str) -> Dict[str, OfficerFacts]:
         officers: Dict[str, OfficerFacts] = {}
+        # Trailing header words that should not be captured as part of a name.
+        _TRAILERS = r"Statement|Report|Officer|Age|Date|Time|Name"
         patterns = [
-            r"Statement\s+of:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)",
-            r"Officer\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)",
-            r"(?:Constable|Detective|Sergeant)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)",
+            rf"Statement\s+of:\s*([A-Z][a-z]+(?:\s+(?!{_TRAILERS}\b)[A-Z][a-z]+)+)",
+            rf"Officer\s+([A-Z][a-z]+(?:\s+(?!{_TRAILERS}\b)[A-Z][a-z]+)+)",
+            rf"(?:Constable|Detective|Sergeant)\s+([A-Z][a-z]+(?:\s+(?!{_TRAILERS}\b)[A-Z][a-z]+)+)",
         ]
         for pattern in patterns:
             for m in re.finditer(pattern, text, re.IGNORECASE):
                 name = m.group(1).strip()
-                # Drop trailing noise like "Age"
-                name = re.sub(r"\s+Age.*", "", name, flags=re.IGNORECASE)
                 if name and name not in officers:
                     officers[name] = OfficerFacts(name=name)
         return officers
 
     def _extract_admissions(self, text: str, source_name: str) -> List[Admission]:
         admissions: List[Admission] = []
-        seen: set[str] = set()
+        seen: Set[str] = set()
         # Look for admission phrases in officer notebook extracts. Keep the
         # inference of `signed` and `lawyer_present` within the same sentence
         # (or logical line) as the admission phrase, rather than a long snippet.
@@ -256,11 +256,7 @@ class FactSheetBuilder:
                 continue
             line = self._line_for(text, m.start())
             sent_lower = sentence.lower()
-            signed = None
-            if "refused to sign" in sent_lower or "declined to sign" in sent_lower:
-                signed = False
-            elif "signed" in sent_lower and "refused" not in sent_lower:
-                signed = True
+            signed = self._infer_signed(sent_lower)
             lawyer = None
             if re.search(r"\b(no|not|without)\s+lawyer\b", sent_lower):
                 lawyer = False
@@ -279,6 +275,40 @@ class FactSheetBuilder:
                 )
             )
         return admissions
+
+    def _infer_signed(self, sent_lower: str) -> bool | None:
+        """Infer whether a signature was given based on a sentence.
+
+        Returns True only for clear positive signatures, False for explicit
+        refusal or negation, and None when ambiguous.
+        """
+        # Explicit refusal/negation patterns.
+        negation_patterns = [
+            r"\b(?:refused|declined)\s+to\s+sign\b",
+            r"\bnot\s+signed\b",
+            r"\bdid\s+not\s+sign\b",
+            r"\bnever\s+signed\b",
+            r"\bunsigned\b",
+            r"\bdidn'?t\s+sign\b",
+            r"\bwasn'?t\s+signed\b",
+            r"\bweren'?t\s+signed\b",
+        ]
+        for pattern in negation_patterns:
+            if re.search(pattern, sent_lower):
+                return False
+
+        # Clear positive signature patterns only.
+        positive_patterns = [
+            r"\b(?:defendant|he|she|they|suspect|officer|witness|i|we)\s+signed\b",
+            r"\bsigned\s+(?:the|a|an|his|her|their|my|our|it|by|and|with)\b",
+            r"\b(?:notebook|statement|entry|form|document|page|report|record)\s+(?:was|is|were)\s+signed\b",
+            r"\bsigned\s+(?:notebook|statement|entry|form|document|page|report|record)\b",
+        ]
+        for pattern in positive_patterns:
+            if re.search(pattern, sent_lower):
+                return True
+
+        return None
 
     def _extract_forensics(self, text: str, source_name: str) -> List[ForensicItem]:
         forensics = []

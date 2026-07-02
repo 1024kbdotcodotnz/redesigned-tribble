@@ -107,6 +107,26 @@ He later refused to sign another statement.
     assert refused.signed is False
 
 
+@pytest.mark.parametrize(
+    "sentence,expected",
+    [
+        ("The defendant admitted the offending and signed the notebook.", True),
+        ("He admitted it but did not sign the notebook.", False),
+        ("She admitted it, yet the notebook was never signed.", False),
+        ("They admitted it although the statement remained unsigned.", False),
+        ("The defendant admitted it; the form wasn't signed.", False),
+        ("He admitted it, didn't sign anything.", False),
+        ("She confessed and signed the statement.", True),
+        ("The defendant admitted it; signing was not discussed.", None),
+    ],
+)
+def test_signed_inference_handles_negation(sentence, expected):
+    builder = FactSheetBuilder()
+    sheet = builder.build(_minimal_parsed(), sentence, source_name="synthetic.txt")
+    assert len(sheet.admissions) == 1
+    assert sheet.admissions[0].signed is expected
+
+
 def test_lim_officers_and_admission():
     file_path = _lim_file_path()
     if not file_path.exists():

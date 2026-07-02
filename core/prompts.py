@@ -314,11 +314,12 @@ Provide a structured analysis covering:
    - Assessment: PROVEN / UNPROVEN / UNCLEAR
 
 3. DEFENCE STRATEGIES
-   List 4-6 distinct defence strategies labelled A, B, C, etc. You MUST list at least four strategies. The FIRST strategy MUST be challenging any alleged admission (quote the exact words attributed to the defendant; then analyse voluntariness, inducement, legal advice, unsigned record). The remaining strategies MUST include reasonable doubt about knowledge and, if applicable, lawfulness of a warrantless search under s 18(2) Search and Surveillance Act 2012.
+   List 4-6 distinct defence strategies numbered 1, 2, 3, etc. You MUST list at least four strategies. The FIRST strategy MUST be challenging any alleged admission (quote the exact words attributed to the defendant; then analyse voluntariness, inducement, legal advice, unsigned record). The remaining strategies MUST include reasonable doubt about knowledge and, if applicable, lawfulness of a warrantless search under s 18(2) Search and Surveillance Act 2012.
    For each:
-   - Strategy name
-   - Legal basis
-   - Factual foundation
+   - Strategy number and name on one line (e.g. "1. Challenge the alleged admission")
+   - 3-5 bullet points
+   - Strength: STRONG/MODERATE/WEAK
+   Do NOT use "Strategy Name:" or letter labels A, B, C.
    - How to raise it
    - Strength rating: STRONG / MODERATE / WEAK
 
@@ -738,7 +739,7 @@ Statute: [statute section from the primary charge]
 Prepared: [write today's date in the format DD Month YYYY, e.g., "24 June 2026". Do NOT output a placeholder like "[Today's Date]" or "[today's date]". If you cannot determine the date, write the literal current date in DD Month YYYY format; never leave a bracketed placeholder.]
 
 # EXECUTIVE SUMMARY
-3-5 short paragraphs. State the charge, the central evidentiary pillar, the defence's core position, name the key officers and lawyers, and the overall assessment. Do NOT repeat the title block (Court, Charge, Statute, Prepared date) in this section.
+Provide a detailed, substantive executive summary (4-6 paragraphs of several sentences each). Set out: the charge and statutory provision; the date, time, and location of the alleged offence; a concise chronology of the key events; the central evidentiary pillars relied on by the Crown; the names and roles of key officers, witnesses, and lawyers mentioned; significant procedural history such as arrest, bail, searches, and interviews; the defence's core position; and an overall assessment of the prosecution case. Include further relevant facts from the disclosure, such as descriptions of seized items, forensic results, admissions, or alibi evidence. Weave the facts into a coherent narrative rather than listing headings. Do NOT repeat the title block lines (Court, Charge, Statute, Prepared date) verbatim.
 
 # CHARGE AND LEGISLATIVE FRAMEWORK
 - The Charge: offence wording and statute.
@@ -750,31 +751,44 @@ Prepared: [write today's date in the format DD Month YYYY, e.g., "24 June 2026".
 Summarise the key evidence in short bullet groups based only on the raw disclosure.
 
 # ELEMENTS THE PROSECUTION MUST PROVE
-For each element, start with a numbered heading line such as "1. The defendant had custody or control of the substance." Then provide: Prosecution evidence, Defence response/weakness, and Assessment (PROVEN / UNPROVEN / UNCLEAR beyond reasonable doubt).
+For each element, start with a numbered heading line that states the actual statutory element of the PRIMARY CHARGE. The example below is for drug possession; if the charge is burglary under Crimes Act 1961 s 231, use elements such as "1. The defendant entered a building or ship as a trespasser." and "2. The defendant entered with intent to commit an imprisonable offence in that building or ship." Do NOT use a drug-possession element (e.g., "custody or control of the substance") for a non-drug charge. Then provide: Prosecution evidence, Defence response/weakness, and Assessment (PROVEN / UNPROVEN / UNCLEAR beyond reasonable doubt). Under "Defence Response/Weaknesses" be factually exact: if you challenge identification or a witness, state what the witness said, quote or paraphrase the exact passage from the disclosure, identify any contradiction with another witness or with the CCTV/dates/times, and explain why it is unreliable (e.g., poor viewing conditions, distance, no independent corroboration). If the exact basis is not in the disclosure, write "not stated in the disclosure".
 
 # ASSESSMENT OF PROSECUTION CASE
 ## Strengths
-Numbered subsections of evidence that helps the Crown.
+Numbered subsections of evidence that helps the Crown. Start each subsection with a number and a bold label ending in ':' (e.g. "1. Forensic evidence:").
 ## Weaknesses
-Numbered subsections of inconsistencies, gaps, and alternative explanations.
+Numbered subsections of inconsistencies, gaps, and alternative explanations. Start each subsection with a number and a bold label ending in ':' (e.g. "1. Chain of custody gaps:"). Use numbers ONLY (1., 2., 3., etc.); do NOT use bullets (• or -) for weaknesses. Be factually exact: if you identify inventory discrepancies, quote the specific serial numbers; if you identify conflicting statements, identify each witness by name or statement reference and state precisely what each one said (e.g., "Officer Smith described the suspect as 6 ft tall wearing a black jacket (p. 4); store owner Jones described the suspect as 5 ft 8 in wearing a grey hoodie (p. 6)"); if the exact detail is not in the disclosure, write "not stated in the disclosure".
+
+# EVIDENCE ANALYSIS
+Analyse the reliability, weight, and limitations of the key evidence from a defence perspective. Do NOT simply repeat the facts already summarised in "Summary of Evidence" or the points already made in "Assessment of Prosecution Case". Focus on: admissibility concerns; forensic reliability and whether results are definitive or capable of an innocent explanation; identification risks; chain-of-custody gaps; and what inferences can or cannot fairly be drawn. Identify genuinely disputed facts and explain why they matter. Use clear subheadings such as "## Reliability of fingerprint evidence", "## CCTV identification", or "## Admissibility of the defendant's statements".
 
 # DEFENCE STRATEGIES AND OPTIONS
-Label A, B, C, etc. For each: strategy name, 3-5 bullet points, legal basis (verified only), Strength (STRONG/MODERATE/WEAK). The first strategy must challenge any disputed admission or statement, quoting exact words if present.
+Number each strategy 1, 2, 3, etc. For each strategy provide: the strategy name on the same line as the number, 3-5 bullet points, and a final line "Strength: STRONG/MODERATE/WEAK". Do NOT use "Strategy Name:". Do NOT use letter labels A, B, C. Do NOT output a bare strength rating without a strategy name. Example:
+1. Challenge the alleged admission
+- Question voluntariness and inducement during police interview.
+- Highlight inconsistencies in the defendant's statements.
+- Cite NZBORA s 24(1)(d) regarding right to silence.
+Strength: STRONG
+2. Challenge the search of the defendant's bag
+- Ask whether police had reasonable suspicion under s 18(2) Search and Surveillance Act 2012.
+- Request the officer's notebook and any body-worn footage.
+- Argue exclusion under NZBORA s 21 if the search was unlawful.
+Strength: MODERATE
 
 # CROSS-EXAMINATION PRIORITIES
-List the named witnesses. For each: role, 2-4 suggested questions, and what the defence gains. Do NOT omit.
+List the named witnesses. For each witness, provide: role; 2-4 concrete, fact-specific suggested questions; and for each question explain WHY it matters and WHERE the defence goes from here (e.g., what factual dispute it creates, what exclusion argument it supports, or what reasonable-doubt point it advances). Do NOT omit the "why" or the strategic next step.
 
 # DISCLOSURE AND FORENSIC GAPS
-List 4-6 items. For each: what is missing/problematic, why it matters, request/application.
+List 4-6 items. For each: what is missing/problematic; why it matters to the defence (the "so what?"); and the request/application. The "Why it Matters" must explain the practical difference the gap makes: e.g., it prevents the Crown from proving the exhibit is the same item seized, it creates a risk of contamination or substitution, it undermines the reliability of forensic comparison, or it supports an exclusion or reasonable-doubt argument. Do not write generic statements like "this is important for the defence"; explain exactly how the missing material weakens the prosecution case.
 
 # INSTRUCTIONS TO COUNSEL PRE-TRIAL
-Numbered list of 6-10 concrete instructions and pre-trial steps for the lawyer.
+Numbered list of 6-10 concrete instructions and pre-trial steps for the lawyer. For each instruction, provide enough detail that counsel knows exactly what to do and why. Use 2-4 bullet sub-points under each numbered item covering: (a) the specific action required; (b) the evidence or disclosure to obtain; (c) the tactical purpose (how it advances the defence); and (d) any deadline or procedural step. Do not write bare one-line headings.
 
 # EVIDENTIARY ISSUES TO RAISE
-Numbered list of specific objections, disclosure requests, or pre-trial applications with legal basis.
+Numbered list of specific objections, disclosure requests, or pre-trial applications. For each item provide: the specific issue; a "- Legal Basis:" line that names the correct statutory provision; and a short quotation of the relevant statutory words from the retrieved sources (e.g., "NZBORA s 24(1)(d): ..."). Ensure the legal basis matches the issue: use NZBORA s 24(1)(d) only for admissions/right-to-silence issues; use NZBORA s 21 for unreasonable search/seizure; use Evidence Act 2006 ss 23-25 for reliability of expert or scientific evidence such as fingerprints or DNA; use Evidence Act 2006 s 12 for chain-of-custody or reliability of real evidence.
 
 # CONCLUSION
-Short paragraph from a defence perspective: assessment of the prosecution's case strength, realistic prospect of acquittal, and the most important next step for the defence. Do not adopt the prosecution's narrative; focus on how the defence can raise reasonable doubt or exclude evidence.
+A substantive defence-focused conclusion (3-5 paragraphs). Assess the overall strength of the prosecution case and the realistic prospect of acquittal. Summarise the key weaknesses raised in the report (e.g., unreliable witnesses, inconsistent forensic evidence, chain-of-custody gaps). Include conditional analysis: explain what happens to the prosecution case if key evidence fails — for example, "If the fingerprint evidence is excluded or found unreliable, the Crown's ability to place Harper at the scene collapses, leaving only the circumstantial CCTV footage, which does not identify him conclusively." Identify the most important next steps for the defence and the priority order in which they should be pursued. Do not adopt the prosecution's narrative; focus on how the defence can raise reasonable doubt or exclude evidence.
 
 # DISCLAIMER
 Standard AI-generated-analysis disclaimer.
@@ -784,12 +798,15 @@ FORMATTING RULES — APPLY TO EVERY SECTION:
 - Table of Contents: each item on its own new line starting with "- ".
 - Summary of Evidence: group facts under clear bullet headings such as "- Search:", "- Seized Evidence:", "- Forensic Testing:", "- Defendant's Conduct:".
 - Assessment of Prosecution Case: MUST include both "## Strengths" and "## Weaknesses" subheadings. Under each subheading use numbered items (1., 2., 3.). The Weaknesses section must contain genuine weaknesses, inconsistencies, and alternative explanations — not a repeat of the Summary of Evidence and NOT a rights-compliance rating like "Rating: COMPLIANT". Each weakness must be a separate numbered point.
+- Evidence Analysis: must analyse the reliability, weight, admissibility, and limitations of the evidence. It must NOT re-list seized items, CCTV clips, or forensic tests that already appear in the Summary of Evidence. Use subheadings such as "## Reliability of fingerprint evidence", "## CCTV identification", or "## Admissibility of the defendant's statements".
+- Factual precision: When stating a discrepancy, inconsistency, or specific fact (e.g., inventory records, witness statements, measurements, identifiers), you MUST quote or list the exact evidence from the disclosure — such as specific serial numbers, exhibit numbers, dates, times, officer names, or document references. Do not use vague phrasing like "some serial numbers" or "there are discrepancies". If the exact detail is not in the disclosure, write "not stated in the disclosure".
 - Elements the Prosecution Must Prove: number each element; under each element include "Prosecution Evidence:", "Defence Response/Weaknesses:", and "Assessment: PROVEN / UNPROVEN / UNCLEAR".
-- Defence Strategies and Options: EVERY strategy must start with a label line "A.", "B.", "C.", etc. on its own line, followed immediately by "Strategy Name: [name]". Example: "A.\nStrategy Name: Challenge the alleged admission". Do NOT omit the letter label. Do NOT use a heading like "Object to Use of Admitted Statement" without the "A." prefix. Each strategy must describe a genuine defence approach (e.g., challenge the admission, raise reasonable doubt, challenge the search). Do not label a defence strategy as "Cross-Examination Priorities" — that is its own separate section.
-- Cross-Examination Priorities: include ONLY police officers and any witness explicitly named as a seizing/searching officer in the disclosure. Do NOT include store employees, complainants, forensic scientists, analysts, or other civilian witnesses as cross-examination targets. For each police witness, start with "Witness: [name] ([role])" before listing questions. Questions must be concrete and fact-specific. Focus on: the exact words of any alleged admission; whether a formal warning or inducement was offered; whether the defendant spoke to a lawyer before answering; whether the defendant declined to sign the notebook; the basis for invoking any warrantless search power; and the handling/chain of custody of seized items. Avoid generic questions like "Did you ensure all seized items were properly documented?".
-- Disclosure and Forensic Gaps: number each item. The first line of each item must be a concrete, descriptive title (e.g., "1. Chain-of-custody records for the GBL exhibit", "2. Body-worn camera footage of the search"). Do NOT use a generic title like "Missing Disclosure Item". Then "- Why it Matters:" and "- Request/Application:".
-- Instructions to Counsel Pre-Trial: numbered list of concrete steps.
-- Evidentiary Issues to Raise: numbered list. The first line of each item must state the specific issue (e.g., "1. Reliability of the unsigned induced admission"). Do NOT use a generic title like "Evidentiary Issue". Then "- Legal Basis:".
+- Defence Strategies and Options: EVERY strategy must be numbered "1.", "2.", "3.", etc. on its own line, with the strategy name on the same line (e.g. "1. Challenge the alleged admission"). Do NOT use "Strategy Name:". Do NOT use letter labels "A.", "B.", "C.". Do NOT output a bare strength rating without a preceding strategy name and bullets. Under each strategy use bullet points ("- ...") for the supporting points, and end each strategy with "Strength: STRONG/MODERATE/WEAK". Each strategy must describe a genuine defence approach (e.g., challenge the admission, raise reasonable doubt, challenge the search). Do not label a defence strategy as "Cross-Examination Priorities" — that is its own separate section.
+- Cross-Examination Priorities: include ONLY police officers and any witness explicitly named as a seizing/searching officer in the disclosure. Do NOT include store employees, complainants, forensic scientists, analysts, or other civilian witnesses as cross-examination targets. For each police witness, start with "Witness: [name] ([role])" before listing questions. Questions must be concrete and fact-specific. After each question or group of related questions, explain WHY it matters and WHERE the defence goes from here (what factual dispute, exclusion argument, or reasonable-doubt point it advances). Focus on: the exact words of any alleged admission; whether a formal warning or inducement was offered; whether the defendant spoke to a lawyer before answering; whether the defendant declined to sign the notebook; the basis for invoking any warrantless search power; and the handling/chain of custody of seized items. Avoid generic questions like "Did you ensure all seized items were properly documented?".
+- Disclosure and Forensic Gaps: number each item. The first line of each item must be a concrete, descriptive title (e.g., "1. Chain-of-custody records for the GBL exhibit", "2. Body-worn camera footage of the search"). Do NOT use a generic title like "Missing Disclosure Item". Then "- Why it Matters:" and "- Request/Application:". The "Why it Matters" must explain the practical difference to the defence (the "so what?"): e.g., it prevents the Crown from proving the exhibit is the same item seized, it creates a contamination/substitution risk, it undermines forensic reliability, or it supports an exclusion or reasonable-doubt argument.
+- Instructions to Counsel Pre-Trial: numbered list of 6-10 concrete steps. Each item must have 2-4 bullet sub-points covering the specific action, the evidence/disclosure required, the tactical purpose, and any deadline or procedural step. Do not use bare one-line headings.
+- Evidentiary Issues to Raise: numbered list. The first line of each item must state the specific issue (e.g., "1. Reliability of the unsigned induced admission"). Do NOT use a generic title like "Evidentiary Issue". Then "- Legal Basis:" naming the correct provision, followed by a short quotation of the statutory words from the retrieved sources. The Legal Basis MUST match the specific issue: use NZBORA s 24(1)(d) only for admissions/right-to-silence issues; use NZBORA s 21 for unreasonable search/seizure; use Evidence Act 2006 ss 23-25 for reliability of expert or scientific evidence such as fingerprints or DNA; use Evidence Act 2006 s 12 for chain-of-custody or reliability of real evidence. Do NOT default every issue to NZBORA s 24(1)(d).
+- Conclusion: 3-5 paragraphs from a defence perspective. Must include an assessment of prosecution case strength, realistic acquittal prospects, a summary of the key weaknesses, conditional analysis of what happens if key evidence fails, and the priority next steps for the defence. Do not adopt the prosecution narrative.
 
 CRITICAL INSTRUCTIONS (READ LAST):
 - The PRIMARY CHARGE above is the actual charge before the court. The entire report must be about that charge.

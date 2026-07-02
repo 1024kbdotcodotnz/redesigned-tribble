@@ -22,8 +22,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Load .env from the project root so the API always uses the same environment
+# regardless of the working directory it was started from.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -123,6 +126,9 @@ def _load_json_file(file_path: str) -> Dict[str, Any]:
 
 def _save_json_file(file_path: str, data: Dict[str, Any]) -> None:
     _ensure_demo_dirs()
+    parent = os.path.dirname(os.path.abspath(file_path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     tmp_path = file_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)

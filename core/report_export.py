@@ -82,6 +82,23 @@ _MAIN_SECTIONS = [
 ]
 
 
+# Legacy disclosure-report sections that map to the 5-template Criminal Disclosure
+# Analysis Report defined in references/output_templates.md.
+# Headings are unnumbered here; the builder prepends sequential numbering.
+_DISCLOSURE_SECTIONS = [
+    ("executive_summary", "EXECUTIVE SUMMARY"),
+    ("charge_analysis", "CHARGES REGISTER"),
+    ("summary_of_facts_review", "EVIDENCE AND SUMMARY OF FACTS ASSESSMENT"),
+    ("police_conduct_assessment", "PROCEDURAL BREACHES AND LAW ENFORCEMENT CONDUCT AUDIT"),
+    ("further_disclosure_required", "FURTHER DISCLOSURE REQUEST"),
+    ("bail_analysis", "BAIL ANALYSIS"),
+    ("options_and_recommendations", "ACCUSED OPTIONS AND NEXT STEPS"),
+    ("expert_consensus_and_divergence", "EXPERT CONSENSUS AND DIVERGENCE"),
+    ("risk_assessment", "RISK ASSESSMENT"),
+    ("conclusion", "CONCLUSION"),
+]
+
+
 # Common Unicode punctuation → ASCII equivalents for PDF (Helvetica) compatibility.
 _PDF_UNICODE_REPLACEMENTS = {
     "\u2018": "'",   # ‘
@@ -382,6 +399,10 @@ def build_docx(result: Dict[str, Any]) -> BytesIO:
     # ─── Main sections ───────────────────────────────────────────────────────
     for idx, (key, heading) in enumerate(visible_sections, start=1):
         content = _get_section(result, key, heading)
+        if key == "defence_strategies":
+
+            content = _clean_strategy_text(content)
+
         heading_para = _safe_add_heading(doc, f"{idx}. {heading}", level=1)
         _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
         _add_section_content(doc, content, keep_unit_together=True)
@@ -422,9 +443,15 @@ def _clear_document_body(doc) -> None:
 
 
 def _add_title_line(paragraph, line: str) -> None:
-    """Add a title-page line, bolding a leading label ending in ':'."""
+    """Add a title-page line, bolding a leading label ending in ':'.
+
+    The prepared date is rendered once by the caller, so skip any
+    'Prepared:' line coming from the title block to avoid duplication.
+    """
+    if line.lower().startswith("prepared:"):
+        return
     match = re.match(r"^([A-Z][A-Za-z\s()]+):\s*(.*)$", line)
-    if match and not line.lower().startswith("prepared:"):
+    if match:
         run = paragraph.add_run(match.group(1) + ": ")
         run.bold = True
         _add_rich_text(paragraph, match.group(2))
@@ -482,12 +509,58 @@ def _normalize_legal_basis(line: str) -> str:
     if re.match(r"^Legal\s+Basis\s*:", stripped, re.IGNORECASE):
         rest = re.sub(r"^Legal\s+Basis\s*:\s*", "", stripped, flags=re.IGNORECASE)
         return f"Legal Basis: {rest}"
-    # Promote bare statute citations to Legal Basis lines.
-    if _is_statute_citation(stripped) and not re.match(
-        r"^[A-Z][^:.!?]{0,59}:", stripped
+    # Promote bare statute citations to Legal Basis lines, but only when they are
+    # standalone citations — not long paragraphs, bullet items, numbered list items,
+    # or labels. A standalone citation is short or begins with the statute name.
+    statute_names = (
+        r"NZBORA|Crimes Act|Search and Surveillance Act|Evidence Act|"
+        r"Misuse of Drugs Act|Criminal Procedure Act|Bail Act|Sentencing Act|"
+        r"Summary Proceedings Act|Children's Act|Oranga Tamariki Act|"
+        r"Land Transport Act|Arms Act|Domestic Violence Act"
+    )
+    # A standalone citation is either a short citation phrase (e.g. "Crimes Act
+    # 1961, s 231") or a line that begins with the statute name/year.
+    is_short_citation = len(stripped) <= 60 and _is_statute_citation(stripped)
+    is_leading_citation = re.match(
+        rf"^\s*(?:{statute_names})\s+\d{{4}}",
+        stripped,
+        re.IGNORECASE,
+    )
+    if (
+        _is_statute_citation(stripped)
+        and (is_short_citation or is_leading_citation)
+        and not re.match(r"^[A-Z][^:.!?]{0,59}:", stripped)
+        and not re.match(r"^[-•*]\s+", stripped)
+        and not re.match(r"^\d+\.\s+", stripped)
     ):
         return f"Legal Basis: {stripped}"
     return line
+
+
+def _clean_strategy_text(text: str) -> str:
+    """Remove legacy 'Strategy Name:' labels and dedupe adjacent identical lines."""
+    lines = text.splitlines()
+    cleaned = []
+    prev = None
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            cleaned.append(line)
+            prev = None
+            continue
+        # Drop standalone 'Strategy Name:' lines.
+        if re.match(r"^Strategy\s+Name\s*:$", stripped, re.IGNORECASE):
+            continue
+        # Strip 'Strategy Name: ' prefix from lines that have actual content.
+        if re.match(r"^Strategy\s+Name\s*:", stripped, re.IGNORECASE):
+            line = re.sub(r"^Strategy\s+Name\s*:\s*", "", line, flags=re.IGNORECASE)
+            stripped = line.strip()
+        # Dedupe consecutive identical non-empty lines.
+        if stripped == prev:
+            continue
+        cleaned.append(line)
+        prev = stripped
+    return "\n".join(cleaned)
 
 
 def _add_section_content(doc, text: str, keep_unit_together: bool = True) -> None:
@@ -527,13 +600,15 @@ def _add_formatted_paragraphs(doc, text: str, keep_unit_together: bool = False) 
     """Add paragraphs with markdown bold, italic, lists, and bold labels.
 
     Continuation lines under a numbered item are indented so the list structure
-    is visually consistent. Bare statute citations are normalised to
-    "Legal Basis: ..." lines.
+    is visually consistent. Lines ending in ':' are treated as sub-section labels
+    and their following lines are indented one level deeper until the next ':'
+    label. Bare statute citations are normalised to "Legal Basis: ..." lines.
     """
     lines = text.split("\n")
     non_empty_indices = [i for i, raw_line in enumerate(lines) if raw_line.strip()]
     last_idx = non_empty_indices[-1] if non_empty_indices else -1
     in_list_item = False
+    in_sub_section = False
     for i, raw_line in enumerate(lines):
         line = raw_line.rstrip()
         if not line.strip():
@@ -545,19 +620,66 @@ def _add_formatted_paragraphs(doc, text: str, keep_unit_together: bool = False) 
         # item, so continuation indentation should reset.
         if re.match(r"^[A-Z]\.", line) or line.startswith("Strategy Name:"):
             in_list_item = False
+            in_sub_section = False
 
         is_last = i == last_idx
+
+        # Standalone sub-section label ending in ':' with no content after it.
+        # e.g. "Seized Evidence:", "Forensic Testing:", "Defendant's Conduct:"
+        bare_label = re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s*$", line)
+        if bare_label:
+            p = doc.add_paragraph()
+            run = p.add_run(bare_label.group(1) + ":")
+            run.bold = True
+            in_list_item = False
+            in_sub_section = True
+            if keep_unit_together:
+                _set_paragraph_pagination(p, keep_together=True, keep_with_next=not is_last)
+            continue
+
+        # Bullet label with content on the same line: "• Assessment: value" — render
+        # as a bold inline label and do NOT open a sub-section.
+        bullet_label_inline = re.match(r"^\s*[-•*]\s+([A-Z][^:.!?]{0,59}):\s+(.+)", line)
+        if bullet_label_inline:
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Inches(0.25 if in_sub_section else 0)
+            run = p.add_run(bullet_label_inline.group(1) + ":")
+            run.bold = True
+            _add_rich_text(p, " " + bullet_label_inline.group(2))
+            in_list_item = False
+            in_sub_section = False
+            if keep_unit_together:
+                _set_paragraph_pagination(p, keep_together=True, keep_with_next=not is_last)
+            continue
+
+        # Bullet label: "• Seized Evidence:" or "- Key findings:" with no content.
+        bullet_label = re.match(r"^\s*[-•*]\s+([A-Z][^:.!?]{0,59}):\s*$", line)
+        if bullet_label:
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Inches(0.25)
+            run = p.add_run(bullet_label.group(1) + ":")
+            run.bold = True
+            in_list_item = False
+            in_sub_section = True
+            if keep_unit_together:
+                _set_paragraph_pagination(p, keep_together=True, keep_with_next=not is_last)
+            continue
 
         # Numbered item: "1. Something"
         numbered = re.match(r"^\s*(\d+)\.\s+(.*)", line)
         if numbered:
             p = doc.add_paragraph()
+            if in_sub_section:
+                p.paragraph_format.left_indent = Inches(0.5)
             _add_rich_text(p, f"{numbered.group(1)}. {numbered.group(2)}")
             in_list_item = True
         # Bullet item: "- Something" or "• Something"
         elif (bullet := re.match(r"^\s*[-•*]\s+(.*)", line)):
             p = doc.add_paragraph()
-            p.paragraph_format.left_indent = Inches(0.25)
+            if in_sub_section:
+                p.paragraph_format.left_indent = Inches(0.5)
+            else:
+                p.paragraph_format.left_indent = Inches(0.25)
             _add_rich_text(p, f"\u2022 {bullet.group(1)}")
             in_list_item = True
         # Bold markdown label: **Label:** rest
@@ -569,7 +691,8 @@ def _add_formatted_paragraphs(doc, text: str, keep_unit_together: bool = False) 
             run.bold = True
             if bold_colon.group(2):
                 _add_rich_text(p, " " + bold_colon.group(2))
-        # Bold label ending in colon, e.g., "Key findings:", "INSTRUCTION 1:", "Assessment:"
+            in_sub_section = False
+        # Bold label ending in colon with inline content, e.g. "Key findings: ..."
         elif (label_colon := re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s+(.*)", line)):
             p = doc.add_paragraph()
             if in_list_item:
@@ -577,10 +700,13 @@ def _add_formatted_paragraphs(doc, text: str, keep_unit_together: bool = False) 
             run = p.add_run(label_colon.group(1) + ":")
             run.bold = True
             _add_rich_text(p, " " + label_colon.group(2))
+            in_sub_section = False
         # Plain paragraph (continuation of a list item)
         else:
             p = doc.add_paragraph()
-            if in_list_item:
+            if in_sub_section:
+                p.paragraph_format.left_indent = Inches(0.5)
+            elif in_list_item:
                 p.paragraph_format.left_indent = Inches(0.25)
             _add_rich_text(p, line)
 
@@ -739,10 +865,12 @@ def _pdf_add_formatted_lines(pdf, text: str) -> None:
 
     Mirrors _add_formatted_paragraphs so PDF and DOCX share the same visual
     structure: numbered items are slightly indented, continuation lines are
-    indented further, and bare statute citations become "Legal Basis: ..." lines.
+    indented further, lines ending in ':' become sub-section labels with indented
+    follow-ups, and bare statute citations become "Legal Basis: ..." lines.
     """
     family = _pdf_font_family(pdf)
     in_list_item = False
+    in_sub_section = False
     for raw_line in text.split("\n"):
         line = raw_line.rstrip()
         if not line.strip():
@@ -754,16 +882,57 @@ def _pdf_add_formatted_lines(pdf, text: str) -> None:
         # item, so continuation indentation should reset.
         if re.match(r"^[A-Z]\.", line) or line.startswith("Strategy Name:"):
             in_list_item = False
+            in_sub_section = False
+
+        # Standalone sub-section label ending in ':' with no content after it.
+        bare_label = re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s*$", line)
+        if bare_label:
+            _pdf_check_page_break(pdf, 10)
+            pdf.set_font(family, "B", 12)
+            pdf.set_x(pdf.l_margin)
+            pdf.cell(0, 6.5, _normalize_for_pdf(bare_label.group(1) + ":"), new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font(family, "", 12)
+            in_list_item = False
+            in_sub_section = True
+            continue
+
+        # Bullet label with content on the same line: "• Assessment: value" — render
+        # as a bold inline label and do NOT open a sub-section.
+        bullet_label_inline = re.match(r"^\s*[-•*]\s+([A-Z][^:.!?]{0,59}):\s+(.+)", line)
+        if bullet_label_inline:
+            _pdf_check_page_break(pdf, 10)
+            pdf.set_font(family, "B", 12)
+            pdf.set_x(pdf.l_margin + (6.35 if in_sub_section else 0))
+            pdf.cell(0, 6.5, _normalize_for_pdf(bullet_label_inline.group(1) + ":"), new_x="RIGHT", new_y="TOP")
+            pdf.set_font(family, "", 12)
+            pdf.cell(0, 6.5, _normalize_for_pdf(" " + bullet_label_inline.group(2)), new_x="LMARGIN", new_y="NEXT")
+            in_list_item = False
+            in_sub_section = False
+            continue
+
+        # Bullet label: "• Seized Evidence:" or "- Key findings:" with no content.
+        bullet_label = re.match(r"^\s*[-•*]\s+([A-Z][^:.!?]{0,59}):\s*$", line)
+        if bullet_label:
+            _pdf_check_page_break(pdf, 10)
+            pdf.set_font(family, "B", 12)
+            pdf.set_x(pdf.l_margin + 6.35)
+            pdf.cell(0, 6.5, _normalize_for_pdf(bullet_label.group(1) + ":"), new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font(family, "", 12)
+            in_list_item = False
+            in_sub_section = True
+            continue
 
         numbered = re.match(r"^\s*(\d+)\.\s+(.*)", line)
         if numbered:
-            _pdf_add_paragraph(pdf, f"{numbered.group(1)}. {numbered.group(2)}", indent=True)
+            extra = 6.35 if in_sub_section else 0
+            _pdf_add_paragraph(pdf, f"{numbered.group(1)}. {numbered.group(2)}", indent=True, extra_indent=extra)
             in_list_item = True
             continue
 
         bullet = re.match(r"^\s*[-•*]\s+(.*)", line)
         if bullet:
-            _pdf_add_paragraph(pdf, f"\u2022 {bullet.group(1)}", indent=True, extra_indent=0)
+            extra = 6.35 if in_sub_section else 0
+            _pdf_add_paragraph(pdf, f"\u2022 {bullet.group(1)}", indent=True, extra_indent=extra)
             in_list_item = True
             continue
 
@@ -776,6 +945,7 @@ def _pdf_add_formatted_lines(pdf, text: str) -> None:
             pdf.set_font(family, "", 12)
             if bold_colon.group(2):
                 _pdf_add_paragraph(pdf, bold_colon.group(2), indent=True, extra_indent=0)
+            in_sub_section = False
             continue
 
         label_colon = re.match(r"^\s*([A-Z][^:.!?]{0,59}):\s+(.*)", line)
@@ -786,9 +956,11 @@ def _pdf_add_formatted_lines(pdf, text: str) -> None:
             pdf.cell(0, 6.5, _normalize_for_pdf(label_colon.group(1) + ":"), new_x="LMARGIN", new_y="NEXT")
             pdf.set_font(family, "", 12)
             _pdf_add_paragraph(pdf, label_colon.group(2), indent=True, extra_indent=0)
+            in_sub_section = False
             continue
 
-        _pdf_add_paragraph(pdf, line, indent=True, extra_indent=6.35 if in_list_item else 0)
+        extra = 6.35 if in_sub_section else (6.35 if in_list_item else 0)
+        _pdf_add_paragraph(pdf, line, indent=True, extra_indent=extra)
 
 
 def _pdf_draw_header(pdf) -> None:
@@ -867,11 +1039,19 @@ if FPDF is not None:
             _pdf_draw_footer(self)
 
 
-def _build_pdf_with_fpdf(result: Dict[str, Any], elapsed: Optional[float] = None, server_time: Optional[float] = None) -> BytesIO:
+def _build_pdf_with_fpdf(
+    result: Dict[str, Any],
+    elapsed: Optional[float] = None,
+    server_time: Optional[float] = None,
+    sections: Optional[list] = None,
+    report_title: str = "LEGAL ANALYSIS",
+    report_subtitle: str = "& DEFENCE INSTRUCTIONS",
+) -> BytesIO:
     """FPDF2 fallback renderer that mirrors the DOCX layout as closely as possible."""
     if FPDF is None:
         raise ImportError("fpdf2 is required for PDF export")
 
+    section_list = sections if sections is not None else _MAIN_SECTIONS
     prepared_date = datetime.datetime.now().strftime("%d %B %Y")
 
     disclaimer = result.get("disclaimer", "")
@@ -899,17 +1079,17 @@ def _build_pdf_with_fpdf(result: Dict[str, Any], elapsed: Optional[float] = None
     pdf.set_y(58)
     pdf.set_font(family, "B", 26)
     pdf.set_text_color(*_BRAND_DARK)
-    pdf.cell(0, 14, _normalize_for_pdf("LEGAL ANALYSIS"), new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.cell(0, 14, _normalize_for_pdf(report_title), new_x="LMARGIN", new_y="NEXT", align="C")
 
     # Store the title's left edge so the title block can align with it.
     pdf.set_font(family, "B", 26)
-    title_w = pdf.get_string_width(_normalize_for_pdf("LEGAL ANALYSIS"))
+    title_w = pdf.get_string_width(_normalize_for_pdf(report_title))
     content_w = pdf.w - pdf.l_margin - pdf.r_margin
     pdf.title_left_edge = pdf.l_margin + max(0.0, (content_w - title_w) / 2)
 
     pdf.set_font(family, "", 18)
     pdf.set_text_color(*_BRAND_DARK)
-    pdf.cell(0, 10, _normalize_for_pdf("& DEFENCE INSTRUCTIONS"), new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.cell(0, 10, _normalize_for_pdf(report_subtitle), new_x="LMARGIN", new_y="NEXT", align="C")
     pdf.ln(8)
 
     title_block = _get_section(result, "title_block", "")
@@ -918,8 +1098,11 @@ def _build_pdf_with_fpdf(result: Dict[str, Any], elapsed: Optional[float] = None
             line = line.strip()
             if not line:
                 continue
+            # Skip any prepared-date line; we render exactly one below.
+            if line.lower().startswith("prepared:"):
+                continue
             match = re.match(r"^([A-Z][A-Za-z\s()]+):\s*(.*)$", line)
-            if match and not line.lower().startswith("prepared:"):
+            if match:
                 pdf.set_y(_pdf_draw_title_block_field(pdf, match.group(1).strip(), match.group(2).strip(), pdf.get_y()))
             else:
                 pdf.set_font(family, "", 12)
@@ -944,7 +1127,7 @@ def _build_pdf_with_fpdf(result: Dict[str, Any], elapsed: Optional[float] = None
         pdf.cell(0, 6, _normalize_for_pdf(" | ".join(meta_parts)), new_x="LMARGIN", new_y="NEXT", align="C")
 
     visible_sections = []
-    for key, heading in _MAIN_SECTIONS:
+    for key, heading in section_list:
         content = _get_section(result, key, heading)
         if content.strip() and not _is_empty_fallback(content, heading):
             visible_sections.append((key, heading))
@@ -964,6 +1147,10 @@ def _build_pdf_with_fpdf(result: Dict[str, Any], elapsed: Optional[float] = None
     # ─── Main sections ───────────────────────────────────────────────────────
     for idx, (key, heading) in enumerate(visible_sections, start=1):
         content = _get_section(result, key, heading)
+        if key == "defence_strategies":
+
+            content = _clean_strategy_text(content)
+
         if not content or not content.strip() or _is_empty_fallback(content, heading):
             continue
         _pdf_check_page_break(pdf, 30)
@@ -1023,4 +1210,191 @@ def build_pdf(result: Dict[str, Any], elapsed: Optional[float] = None, server_ti
                 return _build_pdf_with_fpdf(result, elapsed=elapsed, server_time=server_time)
             except Exception:
                 logging.getLogger(__name__).error("fpdf2 PDF generation failed", exc_info=True)
+                raise
+
+
+def _disclosure_title_block(result: Dict[str, Any]) -> str:
+    """Build a title block for the disclosure report from available legacy fields."""
+    lines = []
+    if result.get("title_block"):
+        return result["title_block"]
+    charge = result.get("charge_analysis", "")
+    if charge:
+        # Try to extract first non-empty line as charge line.
+        first = next((l.strip() for l in charge.splitlines() if l.strip()), "")
+        if first:
+            lines.append(f"Charge: {first}")
+    return "\n".join(lines)
+
+
+def build_disclosure_docx(result: Dict[str, Any]) -> BytesIO:
+    """Build a Word (.docx) Criminal Disclosure Analysis Report.
+
+    Uses the legacy disclosure fields that map to the 5-template report defined
+    in references/output_templates.md.
+    """
+    try:
+        from docx import Document
+    except ImportError as exc:
+        raise ImportError("python-docx is required for DOCX export") from exc
+
+    template_path = (
+        Path(__file__).resolve().parent.parent
+        / "data"
+        / "templates"
+        / "defence_analysis.docx"
+    )
+    if template_path.exists():
+        doc = Document(str(template_path))
+        _clear_document_body(doc)
+    else:
+        doc = Document()
+
+    prepared_date = datetime.datetime.now().strftime("%d %B %Y")
+
+    _configure_docx_defaults(doc)
+    _set_docx_header_footer(doc, prepared_date)
+
+    # ─── Title page ─────────────────────────────────────────────────────────-
+    title = doc.add_paragraph()
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title.paragraph_format.space_before = Pt(92)
+    title.paragraph_format.space_after = Pt(0)
+    title.paragraph_format.line_spacing = 1.0
+    run = title.add_run("CRIMINAL DISCLOSURE")
+    run.bold = True
+    run.font.size = Pt(26)
+    run.font.color.rgb = RGBColor(*_BRAND_DARK)
+
+    subtitle = doc.add_paragraph()
+    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    subtitle.paragraph_format.space_before = Pt(0)
+    subtitle.paragraph_format.space_after = Pt(32)
+    subtitle.paragraph_format.line_spacing = 1.0
+    run = subtitle.add_run("ANALYSIS REPORT")
+    run.font.size = Pt(18)
+    run.font.color.rgb = RGBColor(*_BRAND_DARK)
+
+    title_block = _disclosure_title_block(result)
+    if title_block:
+        for line in _paragraphs_from_text(title_block):
+            line = line.strip()
+            if not line:
+                continue
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p.paragraph_format.left_indent = Inches(1.9)
+            p.paragraph_format.space_before = Pt(0)
+            p.paragraph_format.space_after = Pt(10)
+            p.paragraph_format.line_spacing = 1.0
+            _add_title_line(p, line)
+
+    prepared = doc.add_paragraph()
+    prepared.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    prepared.paragraph_format.space_before = Pt(38)
+    prepared.paragraph_format.space_after = Pt(0)
+    prepared.paragraph_format.line_spacing = 1.0
+    run = prepared.add_run(f"Prepared: {prepared_date}")
+    run.italic = True
+    run.font.size = Pt(10)
+    run.font.color.rgb = RGBColor(*_TEXT_GREY)
+
+    doc.add_page_break()
+
+    # ─── Table of Contents ───────────────────────────────────────────────────
+    toc_heading = _safe_add_heading(doc, "TABLE OF CONTENTS", level=1)
+    doc.add_paragraph()
+
+    visible_sections = []
+    for key, heading in _DISCLOSURE_SECTIONS:
+        content = _get_section(result, key, heading)
+        if content.strip() and not _is_empty_fallback(content, heading):
+            visible_sections.append((key, heading))
+
+    for idx, (key, heading) in enumerate(visible_sections, start=1):
+        p = doc.add_paragraph()
+        p.add_run(f"{idx}. {heading}")
+
+    doc.add_page_break()
+
+    # ─── Main sections ───────────────────────────────────────────────────────
+    for idx, (key, heading) in enumerate(visible_sections, start=1):
+        content = _get_section(result, key, heading)
+        heading_para = _safe_add_heading(doc, f"{idx}. {heading}", level=1)
+        _set_paragraph_pagination(heading_para, keep_together=True, keep_with_next=True)
+        _add_section_content(doc, content, keep_unit_together=True)
+
+    # ─── Disclaimer ──────────────────────────────────────────────────────────
+    disclaimer = result.get("disclaimer", "")
+    if not disclaimer:
+        disclaimer = (
+            "This document is prepared for the purpose of providing legal analysis and "
+            "instructions to defence counsel. It does not constitute legal advice and should "
+            "not be relied upon as a substitute for independent legal counsel."
+        )
+    doc.add_paragraph()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(disclaimer)
+    run.italic = True
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def build_disclosure_pdf(
+    result: Dict[str, Any], elapsed: Optional[float] = None, server_time: Optional[float] = None
+) -> BytesIO:
+    """Build a PDF Criminal Disclosure Analysis Report.
+
+    Converts the DOCX output via Microsoft Word when available; otherwise falls
+    back to the fpdf2 renderer.
+    """
+    try:
+        from docx2pdf import convert
+    except ImportError:
+        logging.getLogger(__name__).info("docx2pdf unavailable; building disclosure PDF with fpdf2 fallback")
+        try:
+            return _build_pdf_with_fpdf(
+                result,
+                elapsed=elapsed,
+                server_time=server_time,
+                sections=_DISCLOSURE_SECTIONS,
+                report_title="CRIMINAL DISCLOSURE",
+                report_subtitle="ANALYSIS REPORT",
+            )
+        except Exception:
+            logging.getLogger(__name__).error("fpdf2 disclosure PDF generation failed", exc_info=True)
+            raise
+
+    docx_buffer = build_disclosure_docx(result)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, "disclosure.docx")
+        pdf_path = os.path.join(tmpdir, "disclosure.pdf")
+
+        with open(docx_path, "wb") as f:
+            f.write(docx_buffer.getvalue())
+
+        try:
+            convert(docx_path, pdf_path)
+            with open(pdf_path, "rb") as f:
+                return BytesIO(f.read())
+        except Exception:
+            logging.getLogger(__name__).warning("docx2pdf conversion failed; falling back to fpdf2", exc_info=True)
+            try:
+                return _build_pdf_with_fpdf(
+                    result,
+                    elapsed=elapsed,
+                    server_time=server_time,
+                    sections=_DISCLOSURE_SECTIONS,
+                    report_title="CRIMINAL DISCLOSURE",
+                    report_subtitle="ANALYSIS REPORT",
+                )
+            except Exception:
+                logging.getLogger(__name__).error("fpdf2 disclosure PDF generation failed", exc_info=True)
                 raise

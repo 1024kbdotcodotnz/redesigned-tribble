@@ -45,6 +45,8 @@ class DisclosureParser:
     OFFENSE_KEYWORDS = [
         ("theft", "Theft", "Crimes Act 1961, s 234"),
         ("burglary", "Burglary", "Crimes Act 1961, s 231"),
+        ("trespasser", "Burglary", "Crimes Act 1961, s 231"),
+        ("entered a building", "Burglary", "Crimes Act 1961, s 231"),
         ("assault", "Assault", "Crimes Act 1961, s 196"),
         ("common assault", "Common Assault", "Crimes Act 1961, s 196"),
         ("male assaults female", "Male Assaults Female", "Crimes Act 1961, s 194"),
@@ -336,38 +338,75 @@ class DisclosureParser:
         description and statute elsewhere.
         """
         text_lower = text.lower()
+
+        # Try to find a defendant name nearby
+        defendant_name = None
+        name_match = re.search(
+            r"Defendant\s*\n\s*Name:\s*([A-Z][A-Z\s,]+?)(?:\s{2,}|\n|PRN|Address|Gender|Date of birth)",
+            text,
+            re.IGNORECASE,
+        )
+        if name_match:
+            defendant_name = name_match.group(1).strip().rstrip(",")
+        else:
+            bail_match = re.search(
+                r"Defendant:\s*([A-Z][A-Z\s,]+?)(?:\n|Address|Date of birth)",
+                text,
+                re.IGNORECASE,
+            )
+            if bail_match:
+                defendant_name = bail_match.group(1).strip().rstrip(",")
+
+        # Try to find offence date
+        date_of_offense = None
+        date_match = re.search(
+            r"Date of offence:\s*([A-Za-z0-9\s,\-]+?)(?:\n|Offence location|$)",
+            text,
+            re.IGNORECASE,
+        )
+        if date_match:
+            date_of_offense = self._parse_date(date_match.group(1).strip())
+
+        # Try to find max penalty
+        max_penalty = None
+        penalty_match = re.search(
+            r"Maximum penalty:\s*(.+?)(?:\n|Offence category|Offence class|$)",
+            text,
+            re.IGNORECASE,
+        )
+        if penalty_match:
+            max_penalty = penalty_match.group(1).strip()
+
+        # Try to find explicit statute references first
+        for pattern in self.STATUTE_PATTERNS:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                section = match.group(1)
+                statute_name = match.group(0).split(",")[0].strip()
+                statute = f"{statute_name}, s {section}"
+                context = text[max(0, match.start() - 200):min(len(text), match.end() + 200)]
+                offense_name = self._infer_offense(context)
+                if offense_name == "Unknown Offense":
+                    offense_name = self._infer_offense(text)
+                print(f"[PARSER] _infer_primary_charge_from_text: inferred from statute: {offense_name}")
+                return {
+                    "offense": offense_name,
+                    "statute": statute,
+                    "description": context.strip()[:300],
+                    "date_of_offense": date_of_offense,
+                    "location": self._extract_location(text),
+                    "maximum_penalty": max_penalty,
+                    "defendant_name": defendant_name,
+                    "court": self._extract_court(text),
+                }
+
+        # GBL / drug possession inference
         has_gbl = "gbl" in text_lower
         has_gamma = "gamma" in text_lower
         print(f"[PARSER] _infer_primary_charge_from_text: has_gbl={has_gbl}, has_gamma={has_gamma}")
-
-        # GBL / drug possession inference
         if has_gbl or has_gamma or "gamma-butyrolactone" in text_lower:
-            # Try to find a defendant name nearby
-            defendant_name = None
-            name_match = re.search(r"Defendant\s*\n\s*Name:\s*([A-Z][A-Z\s,]+?)(?:\s{2,}|\n|PRN|Address|Gender|Date of birth)", text, re.IGNORECASE)
-            if name_match:
-                defendant_name = name_match.group(1).strip().rstrip(",")
-            else:
-                # Try bail notice name
-                bail_match = re.search(r"Defendant:\s*([A-Z][A-Z\s,]+?)(?:\n|Address|Date of birth)", text, re.IGNORECASE)
-                if bail_match:
-                    defendant_name = bail_match.group(1).strip().rstrip(",")
-
-            # Try to find offence date
-            date_of_offense = None
-            date_match = re.search(r"Date of offence:\s*([A-Za-z0-9\s,\-]+?)(?:\n|Offence location|$)", text, re.IGNORECASE)
-            if date_match:
-                date_of_offense = self._parse_date(date_match.group(1).strip())
-
-            # Try to find max penalty; fall back to the known statutory maximum
-            # for possession of a Class B controlled drug under s 7(2).
-            max_penalty = None
-            penalty_match = re.search(r"Maximum penalty:\s*(.+?)(?:\n|Offence category|Offence class|$)", text, re.IGNORECASE)
-            if penalty_match:
-                max_penalty = penalty_match.group(1).strip()
             if not max_penalty:
                 max_penalty = "3 months imprisonment and/or a fine not exceeding $500"
-
             result = {
                 "offense": "Possession of GBL",
                 "statute": "Misuse of Drugs Act 1975 Section 7(1)(a) & (2)",
@@ -381,7 +420,22 @@ class DisclosureParser:
             print(f"[PARSER] _infer_primary_charge_from_text returning: {result}")
             return result
 
-        print("[PARSER] _infer_primary_charge_from_text: no drug signal found")
+        # Offence keyword inference for non-drug charges (burglary, theft, assault, etc.)
+        for keyword, offense_name, statute in self.OFFENSE_KEYWORDS:
+            if keyword.lower() in text_lower:
+                print(f"[PARSER] _infer_primary_charge_from_text: inferred from keyword: {offense_name}")
+                return {
+                    "offense": offense_name,
+                    "statute": statute,
+                    "description": f"Charge inferred from disclosure content: {offense_name}",
+                    "date_of_offense": date_of_offense,
+                    "location": self._extract_location(text),
+                    "maximum_penalty": max_penalty,
+                    "defendant_name": defendant_name,
+                    "court": self._extract_court(text),
+                }
+
+        print("[PARSER] _infer_primary_charge_from_text: no charge signal found")
         return None
 
     def _extract_court(self, text: str) -> str:
@@ -800,13 +854,20 @@ class DisclosureParser:
             if "burglary" in offence:
                 charge_keywords.extend(["burglary", "entered", "trespasser", "intent to steal"])
         else:
-            # No primary charge known: strongly prefer drug/substance content so we
-            # do not fall back to a background narrative (e.g., burglary).
-            charge_keywords = ["gbl", "gamma", "butyrolactone", "controlled drug", "class b",
-                               "misuse of drugs", "drug utensils", "seized liquid", "seized a bottle",
-                               "droppers", "phf science", "esr", "formal warning", "possess drugs",
-                               "admission", "admitted", "statement", "said it was", "identified",
-                               "replied", "responded", "told", "stated", "asked"]
+            # No primary charge known: prefer drug/substance content, but do not
+            # ignore a clear burglary narrative if that is what the disclosure contains.
+            text_lower = text.lower()
+            if "burglary" in text_lower or ("entered" in text_lower and "intent" in text_lower):
+                charge_keywords = ["burglary", "entered", "trespasser", "intent to steal",
+                                   "stolen", "seized", "fingerprint", "cctv", "admission",
+                                   "admitted", "statement", "identified", "replied", "responded",
+                                   "told", "stated", "asked"]
+            else:
+                charge_keywords = ["gbl", "gamma", "butyrolactone", "controlled drug", "class b",
+                                   "misuse of drugs", "drug utensils", "seized liquid", "seized a bottle",
+                                   "droppers", "phf science", "esr", "formal warning", "possess drugs",
+                                   "admission", "admitted", "statement", "said it was", "identified",
+                                   "replied", "responded", "told", "stated", "asked"]
 
         # Background keywords: if a paragraph is dominated by these, drop it.
         background_keywords = ["burglary", "stolen trailer", "towing a trailer", "cctv footage",
@@ -921,10 +982,16 @@ class DisclosureParser:
             lower = s.lower()
             if not any(kw in lower for kw in defence_keywords):
                 continue
-            # Drop obvious background narrative (burglary/trailer) even if it
-            # contains a keyword like "search".
-            if sum(1 for kw in ("burglary", "stolen trailer", "towing a trailer",
-                                 "gps tracking", "trailer registration") if kw in lower) >= 1:
+            # Drop obvious background narrative (burglary/trailer) only when the
+            # disclosure is clearly about a drug/substance charge. If the case itself
+            # concerns burglary, those facts are relevant.
+            drug_signals = sum(1 for kw in ("gbl", "gamma", "butyrolactone", "controlled drug",
+                                            "class b", "misuse of drugs", "methamphetamine",
+                                            "cannabis", "possess drugs") if kw in lower)
+            burglary_signals = sum(1 for kw in ("burglary", "stolen trailer", "towing a trailer",
+                                                "gps tracking", "trailer registration") if kw in lower)
+            if burglary_signals >= 1 and drug_signals == 0:
+                # Burglary background in a drug case — drop.
                 continue
             key = re.sub(r"\s+", " ", s)[:120]
             if key in seen:

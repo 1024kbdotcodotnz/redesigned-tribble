@@ -17,13 +17,19 @@ import streamlit as st
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from the project root so the frontend always uses the same
+# environment as the API, regardless of the working directory it was started from.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # AEGIS report export helpers
 import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from core.report_export import build_docx, build_pdf
+from core.report_export import (
+    build_disclosure_docx,
+    build_disclosure_pdf,
+    build_docx,
+    build_pdf,
+)
 
 st.set_page_config(
     page_title="AEGIS ⚖️ - NZ's Legal Assistant",
@@ -922,7 +928,7 @@ def _navigate_to_collection_inspector(collection: str) -> None:
     st.session_state["inspect_collection"] = collection
     st.session_state["inspect_offset"] = 0
     st.session_state["page"] = "Collection Inspector"
-    st.rerun()
+    # Streamlit reruns automatically after a callback; st.rerun() here is a no-op.
 
 
 def _create_collection_callback() -> None:
@@ -941,7 +947,7 @@ def _create_collection_callback() -> None:
     )
     if result and result.get("success"):
         st.success(result.get("message"))
-        st.rerun()
+        # Streamlit reruns automatically after a callback; st.rerun() here is a no-op.
     else:
         st.error("Failed to create collection.")
 
@@ -1188,246 +1194,6 @@ def show_adminpanel() -> None:
     st.markdown("</div>", unsafe_allow_html=True)
     return
 
-    # Get token from session
-    token = st.session_state.get("apikey")
-    if not token:
-        st.error("Not authenticated. Please log in.")
-        st.markdown("</div>", unsafe_allow_html=True)
-        return
-
-    headers = {"Authorization": f"Bearer {token}"}
-    base_url = "http://127.0.0.1:8000"
-
-    # ─── Database Stats Button ───────────────────────────────────────────────
-    if st.button(
-        "📊 Refresh Database Stats",
-        type="primary",
-        use_container_width=True,
-        key="admin_stats_btn",
-    ):
-        with st.spinner("Loading stats..."):
-            try:
-                import requests
-
-                resp = requests.get(
-                    f"{base_url}/api/v1/admin/stats?admin_key={admin_key}",
-                    headers=headers,
-                    timeout=30,
-                )
-                if resp.status_code == 200:
-                    stats = resp.json()
-                    st.markdown("---")
-                    st.markdown("#### 📈 Database Statistics")
-
-                    cols = st.columns(3)
-                    with cols[0]:
-                        st.metric("📁 Collections", len(stats.get("collections", [])))
-                    with cols[1]:
-                        st.metric("📄 Total Documents", stats.get("total_documents", 0))
-                    with cols[2]:
-                        st.metric("👥 Active Users", stats.get("total_active_users", 0))
-
-                    collections = stats.get("collections", [])
-                    if collections:
-                        st.markdown("#### 📁 Collections Breakdown")
-                        for col in collections:
-                            name = col.get("name", "Unknown")
-                            desc = col.get("description", "")
-                            count = col.get("document_count", 0)
-                            st.markdown(
-                                f"**{name}** - {desc}  <span style='color:#c5a880;'>{
-                                    count:,} docs</span>", unsafe_allow_html=True
-                            )
-
-                    st.caption(f"Last updated: {
-                        stats.get(
-                            'timestamp',
-                            'N/A')}")
-                else:
-                    st.error(f"API Error {resp.status_code}: {resp.text[:200]}")
-            except Exception as e:
-                st.error(f"Error: {e}")
-
-    # ─── Active Users Button ─────────────────────────────────────────────────
-    if st.button(
-        "👥 Show Active Users",
-        type="primary",
-        use_container_width=True,
-        key="admin_users_btn",
-    ):
-        with st.spinner("Loading users..."):
-            try:
-                import requests
-
-                resp = requests.get(
-                    f"{base_url}/api/v1/admin/users?admin_key={admin_key}",
-                    headers=headers,
-                    timeout=30,
-                )
-                if resp.status_code == 200:
-                    users_data = resp.json()
-                    st.markdown("---")
-                    st.markdown("#### 👥 Active Users")
-
-                    total = users_data.get("total_active_users", 0)
-                    st.metric("Total Active Users", total)
-
-                    users = users_data.get("users", [])
-                    if users:
-                        user_rows = []
-                        for u in users:
-                            user_rows.append(
-                                {
-                                    "Type": u.get("type", "unknown"),
-                                    "Username": u.get("username", "N/A"),
-                                    "Name": u.get("name", "N/A"),
-                                    "Email": u.get("email", "N/A"),
-                                    "Role": u.get("role", "N/A"),
-                                    "Expires": (
-                                        u.get("expires_at", "N/A")[:19]
-                                        if u.get("expires_at")
-                                        else "N/A"
-                                    ),
-                                }
-                            )
-                        st.dataframe(
-                            user_rows, use_container_width=True, hide_index=True
-                        )
-                    else:
-                        st.info("No active users found.")
-
-                    st.caption(f"Last updated: {
-                        users_data.get(
-                            'timestamp',
-                            'N/A')}")
-                else:
-                    st.error(f"API Error {resp.status_code}: {resp.text[:200]}")
-            except Exception as e:
-                st.error(f"Error: {e}")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-    return
-
-    # ─── Database Stats Button ───────────────────────────────────────────────
-    if st.button(
-        "📊 Refresh Database Stats",
-        type="primary",
-        use_container_width=True,
-        key="admin_stats_btn",
-    ):
-        with st.spinner("Loading stats..."):
-            stats = api_call(
-                "/api/v1/admin/stats",
-                data={"admin_key": admin_key},
-                method="GET",
-                apikey=st.session_state.get("apikey"),
-                sessionid=st.session_state.get("sessionid"),
-                quiet=True,
-            )
-
-        if stats and isinstance(stats, dict) and "collections" in stats:
-            st.markdown("---")
-            st.markdown("#### 📈 Database Statistics")
-
-            # Metrics row
-            cols = st.columns(3)
-            with cols[0]:
-                st.metric("📁 Collections", len(stats.get("collections", [])))
-            with cols[1]:
-                st.metric("📄 Total Documents", stats.get("total_documents", 0))
-            with cols[2]:
-                st.metric("👥 Active Users", stats.get("total_active_users", 0))
-
-            # Collection breakdown
-            collections = stats.get("collections", [])
-            if collections:
-                st.markdown("#### 📁 Collections Breakdown")
-                for col in collections:
-                    name = col.get("name", "Unknown")
-                    desc = col.get("description", "")
-                    count = col.get("document_count", 0)
-                    st.markdown(
-                        f"<div class='admin-stat-row'>"
-                        f"<strong>{name}</strong> - {desc}<br>"
-                        f"<span style='color:#c5a880;'>{
-                            count:,} documents</span>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
-
-            st.caption(f"Last updated: {stats.get('timestamp', 'N/A')}")
-        else:
-            st.error("Failed to load stats. Check admin key and API connection.")
-
-    # ─── Active Users Button ─────────────────────────────────────────────────
-    if st.button(
-        "👥 Show Active Users",
-        type="primary",
-        use_container_width=True,
-        key="admin_users_btn",
-    ):
-        with st.spinner("Loading users..."):
-            users_data = api_call(
-                "/api/v1/admin/users",
-                data={"admin_key": admin_key},
-                method="GET",
-                apikey=st.session_state.get("apikey"),
-                sessionid=st.session_state.get("sessionid"),
-                quiet=True,
-            )
-
-        if users_data and isinstance(users_data, dict) and "users" in users_data:
-            st.markdown("---")
-            st.markdown("#### 👥 Active Users")
-
-            total = users_data.get("total_active_users", 0)
-            st.metric("Total Active Users", total)
-
-            users = users_data.get("users", [])
-            if users:
-                # Show as a table
-                user_rows = []
-                for u in users:
-                    user_rows.append(
-                        {
-                            "Type": u.get("type", "unknown"),
-                            "Username": u.get("username", "N/A"),
-                            "Name": u.get("name", "N/A"),
-                            "Email": u.get("email", "N/A"),
-                            "Role": u.get("role", "N/A"),
-                            "Expires": (
-                                u.get("expires_at", "N/A")[:19]
-                                if u.get("expires_at")
-                                else "N/A"
-                            ),
-                        }
-                    )
-
-                st.dataframe(
-                    user_rows,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Type": st.column_config.TextColumn("Type", width="small"),
-                        "Username": st.column_config.TextColumn(
-                            "Username", width="medium"
-                        ),
-                        "Name": st.column_config.TextColumn("Name", width="medium"),
-                        "Email": st.column_config.TextColumn("Email", width="medium"),
-                        "Role": st.column_config.TextColumn("Role", width="small"),
-                        "Expires": st.column_config.TextColumn(
-                            "Expires", width="medium"
-                        ),
-                    },
-                )
-            else:
-                st.info("No active users found.")
-
-            st.caption(f"Last updated: {users_data.get('timestamp', 'N/A')}")
-        else:
-            st.error("Failed to load users. Check admin key and API connection.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ─── Disclosure Upload ────────────────────────────────────────────────────
@@ -1736,6 +1502,7 @@ def show_defence_analysis() -> None:
 
             # ─── Export Buttons ──────────────────────────────────────────
             st.markdown("---")
+            st.markdown("**Defence Analysis Brief**")
             pdf_col, docx_col = st.columns([1, 1])
             now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M")
             with pdf_col:
@@ -1766,6 +1533,36 @@ def show_defence_analysis() -> None:
                     )
                 except Exception as e:
                     st.caption(f"DOCX export unavailable: {e}")
+
+            st.markdown("---")
+            st.markdown("**Criminal Disclosure Analysis Report**")
+            dis_pdf_col, dis_docx_col = st.columns([1, 1])
+            with dis_pdf_col:
+                try:
+                    dis_pdf_buffer = build_disclosure_pdf(result, elapsed=elapsed, server_time=server_time)
+                    st.download_button(
+                        label="📕 Download Disclosure PDF",
+                        data=dis_pdf_buffer.getvalue(),
+                        file_name=f"aegis_disclosure_{now_str}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key="disclosurepdfdownloadbtn",
+                    )
+                except Exception as e:
+                    st.caption(f"Disclosure PDF export unavailable: {e}")
+            with dis_docx_col:
+                try:
+                    dis_docx_buffer = build_disclosure_docx(result)
+                    st.download_button(
+                        label="📄 Download Disclosure DOCX",
+                        data=dis_docx_buffer.getvalue(),
+                        file_name=f"aegis_disclosure_{now_str}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True,
+                        key="disclosuredocxdownloadbtn",
+                    )
+                except Exception as e:
+                    st.caption(f"Disclosure DOCX export unavailable: {e}")
 
             # ─── Auto-scroll to results ──────────────────────────────────
             st.html(

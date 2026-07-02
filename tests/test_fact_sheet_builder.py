@@ -107,6 +107,22 @@ He later refused to sign another statement.
     assert refused.signed is False
 
 
+def test_lim_officers_and_admission():
+    file_path = _lim_file_path()
+    if not file_path.exists():
+        pytest.skip(f"Disclosure Lim file not found: {file_path}")
+
+    text = file_path.read_text(encoding="utf-8")
+    parser = DisclosureParser()
+    parsed = parser.parse(text)
+    builder = FactSheetBuilder()
+    sheet = builder.build(parsed, text, source_name=LIM_FILE)
+    names = {o.name for o in sheet.officers.values()}
+    assert "Adeeb Althaf" in names or "Alyssa Marie Booth" in names or "Taylor Ashby" in names
+    assert any("admitted" in a.alleged_words.lower() for a in sheet.admissions)
+    assert any("refused to sign" in a.alleged_words.lower() for a in sheet.admissions)
+
+
 def test_gap_labels_include_line_anchor():
     snippet = """\
 First line.

@@ -229,31 +229,47 @@ class FactSheetBuilder:
 
     def _extract_officers(self, text: str) -> Dict[str, OfficerFacts]:
         officers: Dict[str, OfficerFacts] = {}
-        # Match "Statement of: First Last" blocks
-        for m in re.finditer(r"Statement\s+of:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)", text):
-            name = m.group(1).strip()
-            if name not in officers:
-                officers[name] = OfficerFacts(name=name)
+        patterns = [
+            r"Statement\s+of:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)",
+            r"Officer\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)",
+            r"(?:Constable|Detective|Sergeant)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)",
+        ]
+        for pattern in patterns:
+            for m in re.finditer(pattern, text, re.IGNORECASE):
+                name = m.group(1).strip()
+                # Drop trailing noise like "Age"
+                name = re.sub(r"\s+Age.*", "", name, flags=re.IGNORECASE)
+                if name and name not in officers:
+                    officers[name] = OfficerFacts(name=name)
         return officers
 
     def _extract_admissions(self, text: str, source_name: str) -> List[Admission]:
-        admissions = []
+        admissions: List[Admission] = []
+        seen: set[str] = set()
         # Look for admission phrases in officer notebook extracts. Keep the
         # inference of `signed` and `lawyer_present` within the same sentence
         # (or logical line) as the admission phrase, rather than a long snippet.
         admission_terms = r"admitted|admission|confessed|declined to comment|refused to sign"
         for m in re.finditer(rf"([^\.\n]*(?:{admission_terms})[^\.\n]*)", text, re.IGNORECASE):
             sentence = m.group(1).strip()
+            if not sentence:
+                continue
             line = self._line_for(text, m.start())
             sent_lower = sentence.lower()
             signed = None
-            if "refused to sign" in sent_lower:
+            if "refused to sign" in sent_lower or "declined to sign" in sent_lower:
                 signed = False
             elif "signed" in sent_lower and "refused" not in sent_lower:
                 signed = True
             lawyer = None
-            if "lawyer" in sent_lower:
+            if re.search(r"\b(no|not|without)\s+lawyer\b", sent_lower):
+                lawyer = False
+            elif "lawyer" in sent_lower:
                 lawyer = True
+            key = re.sub(r"\s+", " ", sent_lower)
+            if key in seen:
+                continue
+            seen.add(key)
             admissions.append(
                 Admission(
                     alleged_words=sentence,

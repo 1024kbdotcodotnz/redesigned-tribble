@@ -28,7 +28,7 @@ class FactSheetBuilder:
         sheet.case_meta = self._build_case_meta(parsed)
         sheet.warrants = self._extract_warrants(raw_text, source_name)
         sheet.timeline = self._extract_timeline(raw_text, source_name)
-        sheet.officers = self._extract_officers(raw_text, source_name)
+        sheet.officers = self._extract_officers(raw_text)
         sheet.admissions = self._extract_admissions(raw_text, source_name)
         sheet.forensics = self._extract_forensics(raw_text, source_name)
         sheet.seized_items = self._extract_seized_items(raw_text, source_name)
@@ -62,8 +62,6 @@ class FactSheetBuilder:
         return raw_text[:pos].count("\n") + 1
 
     def _extract_warrants(self, text: str, source_name: str) -> List[Warrant]:
-        warrants: List[Warrant] = []
-
         # Warrant documents begin with a Section 6 reference. Use those anchors
         # to carve out sections, then collect every SW number inside the
         # section. This avoids matching bare numbers in file/page headers while
@@ -81,9 +79,11 @@ class FactSheetBuilder:
         section_starts = [max(0, m.start() - 200) for m in section_markers]
         section_ends = section_starts[1:] + [len(text)]
 
+        # Deduplicate globally across overlapping section windows so a warrant
+        # number is emitted only once in the final list.
+        by_number: Dict[str, Warrant] = {}
         for sec_start, sec_end in zip(section_starts, section_ends):
             section = text[sec_start:sec_end]
-            by_number: Dict[str, Warrant] = {}
             for m in re.finditer(r"(SW\d+)", section):
                 number = m.group(1)
                 actual_pos = sec_start + m.start()
@@ -135,9 +135,7 @@ class FactSheetBuilder:
                     if not existing.place:
                         existing.place = new_warrant.place
 
-            warrants.extend(by_number.values())
-
-        return warrants
+        return list(by_number.values())
 
     def _extract_warrants_by_keyword(
         self, text: str, source_name: str
@@ -229,7 +227,7 @@ class FactSheetBuilder:
             )
         return events
 
-    def _extract_officers(self, text: str, source_name: str) -> Dict[str, OfficerFacts]:
+    def _extract_officers(self, text: str) -> Dict[str, OfficerFacts]:
         officers: Dict[str, OfficerFacts] = {}
         # Match "Statement of: First Last" blocks
         for m in re.finditer(r"Statement\s+of:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)", text):
@@ -312,8 +310,13 @@ class FactSheetBuilder:
 
     def _extract_gaps(self, text: str, source_name: str) -> List[str]:
         gaps = []
-        if "body" in text.lower() and "camera" in text.lower():
-            gaps.append(f"{source_name}: Body-worn camera footage mentioned or requested")
-        if "custody" in text.lower() and "record" in text.lower():
-            gaps.append(f"{source_name}: Chain-of-custody records")
+        text_lower = text.lower()
+        for label, term1, term2 in [
+            ("body-worn camera footage mentioned or requested", "body", "camera"),
+            ("chain-of-custody records", "custody", "record"),
+        ]:
+            if term1 in text_lower and term2 in text_lower:
+                pos = text_lower.find(term1)
+                line = self._line_for(text, pos)
+                gaps.append(f"{source_name}:{line}: {label}")
         return gaps
